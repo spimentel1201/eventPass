@@ -47,16 +47,12 @@ public class EventImageService {
         validateImage(file);
 
         try {
+            // Upload sin transformaciones - las aplicamos después via URL
             Map<String, Object> uploadParams = ObjectUtils.asMap(
                     "folder", String.format("neonpass/events/%s", eventId),
                     "public_id", "banner",
                     "overwrite", true,
-                    "resource_type", "image",
-                    "transformation", new Object[] {
-                            ObjectUtils.asMap("width", 1920, "height", 600, "crop", "limit"),
-                            ObjectUtils.asMap("quality", "auto:good"),
-                            ObjectUtils.asMap("fetch_format", "auto")
-                    });
+                    "resource_type", "image");
 
             @SuppressWarnings("rawtypes")
             Map uploadResult = cloudinary.uploader().upload(file.getBytes(), uploadParams);
@@ -95,14 +91,12 @@ public class EventImageService {
         validateImage(file);
 
         try {
+            // Upload sin transformaciones
             Map<String, Object> uploadParams = ObjectUtils.asMap(
                     "folder", String.format("neonpass/events/%s", eventId),
                     "public_id", "thumbnail",
                     "overwrite", true,
-                    "transformation", new Object[] {
-                            ObjectUtils.asMap("width", 400, "height", 400, "crop", "fill", "gravity", "auto"),
-                            ObjectUtils.asMap("quality", "auto:good")
-                    });
+                    "resource_type", "image");
 
             @SuppressWarnings("rawtypes")
             Map uploadResult = cloudinary.uploader().upload(file.getBytes(), uploadParams);
@@ -133,13 +127,11 @@ public class EventImageService {
 
         try {
             String imageId = UUID.randomUUID().toString();
+            // Upload sin transformaciones
             Map<String, Object> uploadParams = ObjectUtils.asMap(
                     "folder", String.format("neonpass/events/%s/gallery", eventId),
                     "public_id", imageId,
-                    "transformation", new Object[] {
-                            ObjectUtils.asMap("width", 1200, "height", 800, "crop", "limit"),
-                            ObjectUtils.asMap("quality", "auto:good")
-                    });
+                    "resource_type", "image");
 
             @SuppressWarnings("rawtypes")
             Map uploadResult = cloudinary.uploader().upload(file.getBytes(), uploadParams);
