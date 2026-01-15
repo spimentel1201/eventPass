@@ -7,6 +7,7 @@ import com.neonpass.domain.model.enums.UserRole;
 import com.neonpass.domain.port.in.AuthenticateUserUseCase;
 import com.neonpass.domain.port.in.CreateUserUseCase;
 import com.neonpass.domain.port.out.UserRepository;
+import com.neonpass.infrastructure.config.JwtService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -18,10 +19,6 @@ import java.util.UUID;
 
 /**
  * Servicio de aplicación para gestión de usuarios y autenticación.
- * 
- * <p>
- * Implementa los Use Cases de registro y login.
- * </p>
  */
 @Service
 @RequiredArgsConstructor
@@ -31,9 +28,7 @@ public class UserService implements CreateUserUseCase, AuthenticateUserUseCase {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-
-    // Temporal: en producción usar JWT real
-    private static final long TOKEN_EXPIRATION_MS = 86400000L; // 24 horas
+    private final JwtService jwtService;
 
     @Override
     public User execute(CreateUserCommand command) {
@@ -76,9 +71,9 @@ public class UserService implements CreateUserUseCase, AuthenticateUserUseCase {
             throw new InvalidCredentialsException();
         }
 
-        // TODO: Implementar JWT real en fase de seguridad
-        String accessToken = generateTemporaryToken(user);
-        String refreshToken = generateTemporaryToken(user);
+        // Generar tokens JWT reales
+        String accessToken = jwtService.generateAccessToken(user);
+        String refreshToken = jwtService.generateRefreshToken(user);
 
         log.info("Usuario autenticado exitosamente: {}", user.getId());
 
@@ -86,15 +81,6 @@ public class UserService implements CreateUserUseCase, AuthenticateUserUseCase {
                 user,
                 accessToken,
                 refreshToken,
-                TOKEN_EXPIRATION_MS);
-    }
-
-    /**
-     * Genera un token temporal (placeholder para JWT).
-     * TODO: Implementar JWT real con io.jsonwebtoken
-     */
-    private String generateTemporaryToken(User user) {
-        // Placeholder - será reemplazado por JWT real
-        return "temp_token_" + user.getId() + "_" + System.currentTimeMillis();
+                jwtService.getExpirationMs());
     }
 }
