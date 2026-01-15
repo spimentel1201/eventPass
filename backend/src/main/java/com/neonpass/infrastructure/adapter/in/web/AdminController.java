@@ -4,9 +4,11 @@ import com.neonpass.application.service.AdminService;
 import com.neonpass.domain.model.User;
 import com.neonpass.infrastructure.adapter.in.web.dto.request.ChangeRoleRequest;
 import com.neonpass.infrastructure.adapter.in.web.dto.response.AdminDashboardResponse;
+import com.neonpass.infrastructure.adapter.in.web.dto.response.PageResponse;
 import com.neonpass.infrastructure.adapter.in.web.dto.response.UserResponse;
 import com.neonpass.infrastructure.common.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -41,12 +43,27 @@ public class AdminController {
     }
 
     @GetMapping("/users")
-    @Operation(summary = "Listar usuarios", description = "Lista todos los usuarios de la plataforma")
-    public ResponseEntity<ApiResponse<List<UserResponse>>> getAllUsers() {
-        List<UserResponse> users = adminService.getAllUsers().stream()
+    @Operation(summary = "Listar usuarios", description = "Lista todos los usuarios con paginación")
+    public ResponseEntity<ApiResponse<PageResponse<UserResponse>>> getAllUsers(
+            @Parameter(description = "Número de página (0-indexed)") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Tamaño de página") @RequestParam(defaultValue = "10") int size) {
+
+        List<User> allUsers = adminService.getAllUsers();
+
+        // Paginación manual
+        int start = page * size;
+        int end = Math.min(start + size, allUsers.size());
+
+        List<UserResponse> pagedUsers = allUsers.stream()
+                .skip(start)
+                .limit(size)
                 .map(this::toUserResponse)
                 .collect(Collectors.toList());
-        return ResponseEntity.ok(ApiResponse.success(users));
+
+        PageResponse<UserResponse> pageResponse = PageResponse.of(
+                pagedUsers, page, size, allUsers.size());
+
+        return ResponseEntity.ok(ApiResponse.success(pageResponse));
     }
 
     @GetMapping("/users/{userId}")
