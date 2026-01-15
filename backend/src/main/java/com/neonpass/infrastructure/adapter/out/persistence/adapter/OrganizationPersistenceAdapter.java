@@ -52,4 +52,11 @@ public class OrganizationPersistenceAdapter implements OrganizationRepository {
     public boolean existsBySlug(String slug) {
         return jpaOrganizationRepository.existsBySlug(slug);
     }
+
+    @Override
+    public List<Organization> findAll() {
+        return jpaOrganizationRepository.findAll().stream()
+                .map(organizationMapper::toDomain)
+                .collect(Collectors.toList());
+    }
 }

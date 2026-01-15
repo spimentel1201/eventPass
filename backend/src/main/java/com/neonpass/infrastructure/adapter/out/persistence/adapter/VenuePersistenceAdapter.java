@@ -41,4 +41,11 @@ public class VenuePersistenceAdapter implements VenueRepository {
         var saved = jpaVenueRepository.save(entity);
         return venueMapper.toDomain(saved);
     }
+
+    @Override
+    public List<Venue> findAll() {
+        return jpaVenueRepository.findAll().stream()
+                .map(venueMapper::toDomain)
+                .collect(Collectors.toList());
+    }
 }

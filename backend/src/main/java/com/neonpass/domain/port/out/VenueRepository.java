@@ -16,4 +16,6 @@ public interface VenueRepository {
     List<Venue> findByOrganizationId(UUID organizationId);
 
     Venue save(Venue venue);
+
+    List<Venue> findAll();
 }

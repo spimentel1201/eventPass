@@ -19,5 +19,7 @@ public interface OrganizationRepository {
 
     Organization save(Organization organization);
 
+    List<Organization> findAll();
+
     boolean existsBySlug(String slug);
 }
