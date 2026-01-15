@@ -58,6 +58,13 @@ public class EventPersistenceAdapter implements EventRepository {
     }
 
     @Override
+    public List<Event> findAll() {
+        return jpaEventRepository.findAll().stream()
+                .map(eventMapper::toDomain)
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public Event save(Event event) {
         var entity = eventMapper.toEntity(event);
         var saved = jpaEventRepository.save(entity);

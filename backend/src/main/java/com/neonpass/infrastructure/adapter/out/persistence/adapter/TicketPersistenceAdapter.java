@@ -60,6 +60,13 @@ public class TicketPersistenceAdapter implements TicketRepository {
     }
 
     @Override
+    public List<Ticket> findAll() {
+        return jpaTicketRepository.findAll().stream()
+                .map(ticketMapper::toDomain)
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public Ticket save(Ticket ticket) {
         var entity = ticketMapper.toEntity(ticket);
         var saved = jpaTicketRepository.save(entity);

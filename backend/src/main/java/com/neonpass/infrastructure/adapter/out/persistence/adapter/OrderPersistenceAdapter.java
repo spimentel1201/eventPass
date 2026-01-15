@@ -51,6 +51,13 @@ public class OrderPersistenceAdapter implements OrderRepository {
     }
 
     @Override
+    public List<Order> findAll() {
+        return jpaOrderRepository.findAll().stream()
+                .map(orderMapper::toDomain)
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public Order save(Order order) {
         var entity = orderMapper.toEntity(order);
         var saved = jpaOrderRepository.save(entity);

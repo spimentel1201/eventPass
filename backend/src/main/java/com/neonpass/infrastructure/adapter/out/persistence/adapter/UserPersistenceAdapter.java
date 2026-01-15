@@ -7,8 +7,10 @@ import com.neonpass.infrastructure.adapter.out.persistence.repository.JpaUserRep
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Adapter que implementa el puerto de salida UserRepository.
@@ -30,6 +32,13 @@ public class UserPersistenceAdapter implements UserRepository {
     public Optional<User> findByEmail(String email) {
         return jpaUserRepository.findByEmail(email)
                 .map(userMapper::toDomain);
+    }
+
+    @Override
+    public List<User> findAll() {
+        return jpaUserRepository.findAll().stream()
+                .map(userMapper::toDomain)
+                .collect(Collectors.toList());
     }
 
     @Override

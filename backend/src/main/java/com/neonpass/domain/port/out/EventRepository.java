@@ -25,5 +25,7 @@ public interface EventRepository {
      */
     List<Event> findPublished();
 
+    List<Event> findAll();
+
     Event save(Event event);
 }

@@ -20,5 +20,7 @@ public interface OrderRepository {
 
     List<Order> findByUserIdAndStatus(UUID userId, OrderStatus status);
 
+    List<Order> findAll();
+
     Order save(Order order);
 }

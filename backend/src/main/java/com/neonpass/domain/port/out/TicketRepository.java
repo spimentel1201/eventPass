@@ -35,5 +35,7 @@ public interface TicketRepository {
      */
     boolean existsByEventIdAndSeatIdAndStatusIn(UUID eventId, UUID seatId, List<TicketStatus> statuses);
 
+    List<Ticket> findAll();
+
     Ticket save(Ticket ticket);
 }
