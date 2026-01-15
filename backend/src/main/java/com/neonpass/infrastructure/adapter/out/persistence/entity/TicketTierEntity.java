@@ -4,7 +4,7 @@ import com.neonpass.domain.model.enums.TicketTierStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.SQLDelete;
-import org.hibernate.annotations.Where;
+import org.hibernate.annotations.SQLRestriction;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
@@ -18,7 +18,7 @@ import java.util.UUID;
 @Entity
 @Table(name = "ticket_tiers")
 @SQLDelete(sql = "UPDATE ticket_tiers SET deleted = true WHERE id = ?")
-@Where(clause = "deleted = false")
+@SQLRestriction("deleted = false")
 @EntityListeners(AuditingEntityListener.class)
 @Data
 @Builder

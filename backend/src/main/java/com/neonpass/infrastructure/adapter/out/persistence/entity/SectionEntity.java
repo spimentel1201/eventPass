@@ -5,7 +5,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.SQLDelete;
-import org.hibernate.annotations.Where;
+import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.type.SqlTypes;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -19,7 +19,7 @@ import java.util.UUID;
 @Entity
 @Table(name = "sections")
 @SQLDelete(sql = "UPDATE sections SET deleted = true WHERE id = ?")
-@Where(clause = "deleted = false")
+@SQLRestriction("deleted = false")
 @EntityListeners(AuditingEntityListener.class)
 @Data
 @Builder
