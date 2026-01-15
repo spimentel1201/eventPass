@@ -13,6 +13,12 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Configuración de seguridad para la API con JWT.
@@ -28,6 +34,9 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
+                // Habilitar CORS
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+
                 // Deshabilitar CSRF para API REST stateless
                 .csrf(AbstractHttpConfigurer::disable)
 
@@ -49,7 +58,13 @@ public class SecurityConfig {
 
                         // Listar eventos públicos - acceso público
                         .requestMatchers(HttpMethod.GET, "/api/v1/events").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/events/{id}").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/events/**").permitAll()
+
+                        // Organizations y Venues públicos (lectura)
+                        .requestMatchers(HttpMethod.GET, "/api/v1/organizations").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/organizations/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/venues").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/venues/**").permitAll()
 
                         // Health check
                         .requestMatchers("/actuator/health").permitAll()
@@ -61,6 +76,20 @@ public class SecurityConfig {
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
+    }
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        // Permitir todos los orígenes en desarrollo
+        configuration.setAllowedOrigins(List.of("*"));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setExposedHeaders(List.of("Authorization"));
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
     }
 
     @Bean
