@@ -1,0 +1,82 @@
+# NeonPass - Docker Compose Configuration
+# Servicios: PostgreSQL, Redis, MinIO
+
+services:
+  # ==========================================
+  # PostgreSQL Database
+  # ==========================================
+  db:
+    image: postgres:15-alpine
+    container_name: neonpass-db
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: neonpass
+      POSTGRES_USER: neonpass_user
+      POSTGRES_PASSWORD: neonpass_secret
+    volumes:
+      - ./docker/postgres_data:/var/lib/postgresql/data
+    networks:
+      - neonpass-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U neonpass_user -d neonpass"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ==========================================
+  # Redis Cache (Distributed Locking)
+  # ==========================================
+  cache:
+    image: redis:7-alpine
+    container_name: neonpass-cache
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - ./docker/redis_data:/data
+    networks:
+      - neonpass-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ==========================================
+  # MinIO Object Storage (S3-Compatible)
+  # Snippet EXACTO de ENGINEERING_STANDARDS.md
+  # ==========================================
+  minio:
+    image: minio/minio:latest
+    container_name: neonpass-minio
+    ports:
+      - "9000:9000" # API S3
+      - "9001:9001" # Web Console
+    environment:
+      MINIO_ROOT_USER: "admin"
+      MINIO_ROOT_PASSWORD: "password123"
+    command: server /data --console-address ":9001"
+    volumes:
+      - ./docker/minio_data:/data
+    networks:
+      - neonpass-network
+
+  # Job para crear el bucket automáticamente
+  createbuckets:
+    image: minio/mc
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      /usr/bin/mc config host add myminio http://minio:9000 admin password123;
+      /usr/bin/mc mb myminio/neonpass-images;
+      /usr/bin/mc anonymous set public myminio/neonpass-images;
+      exit 0;
+      "
+    networks:
+      - neonpass-network
+
+networks:
+  neonpass-network:
+    driver: bridge

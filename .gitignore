@@ -1,0 +1,129 @@
+# ==========================================
+# NeonPass - .gitignore (Monorepo)
+# ==========================================
+
+# ==========================================
+# OS Generated Files
+# ==========================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ==========================================
+# IDE & Editors
+# ==========================================
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+*.sublime-workspace
+*.sublime-project
+
+# ==========================================
+# Backend (Java / Maven / Spring Boot)
+# ==========================================
+backend/target/
+backend/*.jar
+backend/*.war
+backend/*.ear
+backend/*.class
+backend/.mvn/
+backend/mvnw
+backend/mvnw.cmd
+
+# Spring Boot
+backend/*.log
+backend/logs/
+
+# Lombok
+backend/.apt_generated/
+
+# ==========================================
+# Frontend (Node.js / Next.js)
+# ==========================================
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/.turbo/
+frontend/dist/
+frontend/build/
+
+# Next.js cache
+frontend/.cache/
+
+# NPM/Yarn
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/.pnpm-debug.log*
+
+# Environment files (with secrets)
+frontend/.env.local
+frontend/.env.development.local
+frontend/.env.test.local
+frontend/.env.production.local
+
+# ==========================================
+# Mobile (Flutter)
+# ==========================================
+mobile/.dart_tool/
+mobile/.packages
+mobile/.pub-cache/
+mobile/.pub/
+mobile/build/
+mobile/*.iml
+
+# Flutter/Dart generated files
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+mobile/pubspec.lock
+
+# Android
+mobile/android/.gradle/
+mobile/android/local.properties
+mobile/android/*.apk
+mobile/android/*.aab
+
+# iOS
+mobile/ios/Pods/
+mobile/ios/.symlinks/
+mobile/ios/Flutter/Flutter.framework
+mobile/ios/Flutter/Flutter.podspec
+
+# ==========================================
+# Docker (Persistent Volumes - Local Only)
+# ==========================================
+docker/postgres_data/
+docker/redis_data/
+docker/minio_data/
+
+# ==========================================
+# Environment & Secrets
+# ==========================================
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+secrets/
+
+# ==========================================
+# Test Coverage & Reports
+# ==========================================
+coverage/
+*.lcov
+.nyc_output/
+test-results/
+surefire-reports/
