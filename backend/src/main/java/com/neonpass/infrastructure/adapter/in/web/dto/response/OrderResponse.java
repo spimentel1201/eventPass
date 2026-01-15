@@ -20,6 +20,7 @@ import java.util.UUID;
 public class OrderResponse {
 
     private UUID id;
+    private UUID userId;
     private UUID eventId;
     private OrderStatus status;
     private BigDecimal totalAmount;
@@ -27,4 +28,9 @@ public class OrderResponse {
     private BigDecimal netAmount;
     private String currency;
     private LocalDateTime createdAt;
+
+    // Info adicional para admin
+    private String userEmail;
+    private String eventTitle;
+    private Integer ticketCount;
 }
