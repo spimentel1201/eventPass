@@ -20,6 +20,13 @@ interface RegisterRequest {
     fullName: string;
 }
 
+// Helper to get redirect URL from current location
+function getRedirectUrl(): string | null {
+    if (typeof window === 'undefined') return null;
+    const params = new URLSearchParams(window.location.search);
+    return params.get('redirect');
+}
+
 export function useAuth() {
     const router = useRouter();
     const { setAuth, logout: storeLogout } = useAuthStore();
@@ -35,15 +42,24 @@ export function useAuth() {
             return response.data;
         },
         onSuccess: async (response) => {
-            const { accessToken, refreshToken } = response.data;
+            const { accessToken, refreshToken, user: authUser } = response.data;
 
-            // Fetch user info
-            const userResponse = await api.get<ApiResponse<UserResponse>>(
-                API_ROUTES.ME,
-                { headers: { Authorization: `Bearer ${accessToken}` } }
-            );
-
-            const user = userResponse.data.data;
+            // Use user from login response if available, otherwise fetch
+            let user: UserResponse;
+            if (authUser) {
+                user = authUser;
+            } else {
+                try {
+                    const userResponse = await api.get<ApiResponse<UserResponse>>(
+                        API_ROUTES.ME,
+                        { headers: { Authorization: `Bearer ${accessToken}` } }
+                    );
+                    user = userResponse.data.data;
+                } catch {
+                    // If /me fails, use minimal info from token
+                    user = { id: '', email: '', fullName: 'Usuario', role: 'USER', createdAt: '' };
+                }
+            }
 
             setAuth(
                 {
@@ -58,8 +74,11 @@ export function useAuth() {
 
             setError(null);
 
-            // Redirect based on role
-            if (user.role === 'ADMIN') {
+            // Redirect to the original URL or default based on role
+            const redirectUrl = getRedirectUrl();
+            if (redirectUrl) {
+                router.push(redirectUrl);
+            } else if (user.role === 'ADMIN') {
                 router.push('/admin/dashboard');
             } else if (user.role === 'ORGANIZER') {
                 router.push('/dashboard');

@@ -22,6 +22,7 @@ export interface AuthResponse {
     refreshToken: string;
     tokenType: string;
     expiresIn: number;
+    user?: UserResponse;  // Optional, included in login response
 }
 
 export interface UserResponse {
