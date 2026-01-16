@@ -163,6 +163,41 @@ public class SeatingMapService {
     }
 
     /**
+     * Actualiza una sección existente.
+     */
+    @Transactional
+    public Section updateSection(UUID sectionId, String name, SectionType type,
+            Integer capacity, Map<String, Object> layoutConfig) {
+        Section section = sectionRepository.findById(sectionId)
+                .orElseThrow(() -> new RuntimeException("Section not found: " + sectionId));
+
+        if (name != null)
+            section.setName(name);
+        if (type != null)
+            section.setType(type);
+        if (capacity != null)
+            section.setCapacity(capacity);
+        if (layoutConfig != null)
+            section.setLayoutConfig(serializeToJson(layoutConfig));
+
+        log.info("Updated section {}", sectionId);
+        return sectionRepository.save(section);
+    }
+
+    /**
+     * Elimina una sección (soft delete).
+     */
+    @Transactional
+    public void deleteSection(UUID sectionId) {
+        Section section = sectionRepository.findById(sectionId)
+                .orElseThrow(() -> new RuntimeException("Section not found: " + sectionId));
+
+        section.setDeleted(true);
+        sectionRepository.save(section);
+        log.info("Deleted section {}", sectionId);
+    }
+
+    /**
      * Crea asientos en bulk para una sección.
      */
     @Transactional
