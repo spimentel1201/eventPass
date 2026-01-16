@@ -41,9 +41,9 @@ function NewEventForm() {
 
     const onSubmit = async (data: EventFormData) => {
         try {
-            await createEvent.mutateAsync(data);
-            // Redirect to events list (edit page not implemented yet)
-            router.push('/dashboard/events');
+            const event = await createEvent.mutateAsync(data);
+            // Redirect to edit page to configure event details
+            router.push(`/dashboard/events/${event.id}/edit`);
         } catch (error) {
             console.error('Error creating event:', error);
         }
