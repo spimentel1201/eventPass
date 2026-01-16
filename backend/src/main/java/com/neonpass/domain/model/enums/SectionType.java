@@ -13,5 +13,14 @@ public enum SectionType {
     SEATED,
 
     /** Sección de admisión general (campo, standing) */
-    GENERAL
+    GENERAL,
+
+    /** Sección de pie / standing */
+    STANDING,
+
+    /** Sección VIP */
+    VIP,
+
+    /** Sección para personas con discapacidad */
+    DISABLED
 }
