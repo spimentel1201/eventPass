@@ -75,6 +75,10 @@ export interface SectionLayout {
     color?: string;
     polygon?: number[];
     position?: { x: number; y: number };
+    // Seat configuration
+    rows?: number;
+    seatsPerRow?: number;
+    basePrice?: number;
 }
 
 export interface Seat {
