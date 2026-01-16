@@ -33,6 +33,8 @@ export const useAuthStore = create<AuthState>()(
                 if (typeof window !== 'undefined') {
                     localStorage.setItem('accessToken', accessToken);
                     localStorage.setItem('refreshToken', refreshToken);
+                    // Also set cookie for middleware to read
+                    document.cookie = `accessToken=${accessToken}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
                 }
                 set({ user, accessToken, refreshToken, isAuthenticated: true });
             },
@@ -41,6 +43,8 @@ export const useAuthStore = create<AuthState>()(
                 if (typeof window !== 'undefined') {
                     localStorage.removeItem('accessToken');
                     localStorage.removeItem('refreshToken');
+                    // Remove cookie
+                    document.cookie = 'accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
                 }
                 set({ user: null, accessToken: null, refreshToken: null, isAuthenticated: false });
             },

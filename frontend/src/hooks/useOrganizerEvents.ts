@@ -22,9 +22,20 @@ interface CreateEventRequest {
     title: string;
     description: string;
     venueId: string;
-    startDate: string;
+    startDate: string;  // Frontend format from datetime-local input
     endDate: string;
+    organizationId?: string;
     status?: string;
+}
+
+interface BackendEventRequest {
+    title: string;
+    description: string;
+    organizationId: string;
+    venueId: string;
+    startTime: string;  // Backend format: LocalDateTime
+    endTime: string;
+    status: string;
 }
 
 // Get organizer's events
@@ -45,8 +56,19 @@ export function useCreateEvent() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async (data: CreateEventRequest) => {
-            const response = await api.post<ApiResponse<Event>>(API_ROUTES.EVENTS, data);
+        mutationFn: async (formData: CreateEventRequest) => {
+            // Transform frontend form data to backend format
+            const backendData: BackendEventRequest = {
+                title: formData.title,
+                description: formData.description,
+                organizationId: formData.organizationId || formData.venueId, // Use venueId as fallback for org
+                venueId: formData.venueId,
+                startTime: formData.startDate, // datetime-local format is compatible
+                endTime: formData.endDate,
+                status: formData.status || 'PUBLISHED', // PUBLISHED so it appears in list
+            };
+
+            const response = await api.post<ApiResponse<Event>>(API_ROUTES.EVENTS, backendData);
             return response.data.data;
         },
         onSuccess: () => {

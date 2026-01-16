@@ -78,9 +78,8 @@ export function useAuth() {
             const redirectUrl = getRedirectUrl();
             if (redirectUrl) {
                 router.push(redirectUrl);
-            } else if (user.role === 'ADMIN') {
-                router.push('/admin/dashboard');
-            } else if (user.role === 'ORGANIZER') {
+            } else if (user.role === 'ADMIN' || user.role === 'ORGANIZER') {
+                // Both ADMIN and ORGANIZER go to dashboard (admin panel not yet implemented)
                 router.push('/dashboard');
             } else {
                 router.push('/events');
