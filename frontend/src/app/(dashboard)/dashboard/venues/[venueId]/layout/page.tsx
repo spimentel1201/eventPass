@@ -1,20 +1,18 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useState, Suspense } from 'react';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import {
     ArrowLeft,
     Loader2,
-    Save,
     Plus,
     Trash2,
     Edit3,
     Grid3X3,
     Settings,
-    Eye,
 } from 'lucide-react';
-import { useVenue, useVenueSections, useCreateSection } from '@/hooks/useVenues';
+import { useVenue, useVenueSections, useCreateSection, useUpdateSection, useDeleteSection } from '@/hooks/useVenues';
 import type { Section } from '@/types';
 
 interface SectionFormData {
@@ -42,52 +40,92 @@ const SECTION_TYPES = [
     { value: 'DISABLED', label: 'Accesibilidad' },
 ];
 
+const defaultFormData: SectionFormData = {
+    name: '',
+    type: 'SEATED',
+    rows: 10,
+    seatsPerRow: 20,
+    basePrice: 50,
+    color: SECTION_COLORS[0].value,
+};
+
 function VenueLayoutEditorContent({ venueId }: { venueId: string }) {
-    const router = useRouter();
     const { data: venue, isLoading: venueLoading } = useVenue(venueId);
     const { data: sections, isLoading: sectionsLoading, refetch } = useVenueSections(venueId);
     const createSection = useCreateSection();
+    const updateSection = useUpdateSection();
+    const deleteSection = useDeleteSection();
 
-    const [showAddModal, setShowAddModal] = useState(false);
-    const [formData, setFormData] = useState<SectionFormData>({
-        name: '',
-        type: 'SEATED',
-        rows: 10,
-        seatsPerRow: 20,
-        basePrice: 50,
-        color: SECTION_COLORS[0].value,
-    });
+    const [showModal, setShowModal] = useState(false);
+    const [editingSection, setEditingSection] = useState<Section | null>(null);
+    const [formData, setFormData] = useState<SectionFormData>(defaultFormData);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
 
-    const handleAddSection = async () => {
+    const openAddModal = () => {
+        setEditingSection(null);
+        setFormData(defaultFormData);
+        setShowModal(true);
+    };
+
+    const openEditModal = (section: Section) => {
+        setEditingSection(section);
+        const config = section.layoutConfig || {};
+        setFormData({
+            name: section.name,
+            type: (section.type as SectionFormData['type']) || 'SEATED',
+            rows: config.rows || 10,
+            seatsPerRow: config.seatsPerRow || 20,
+            basePrice: config.basePrice || 50,
+            color: config.color || SECTION_COLORS[0].value,
+        });
+        setShowModal(true);
+    };
+
+    const handleSave = async () => {
         try {
-            await createSection.mutateAsync({
+            const payload = {
                 venueId,
                 name: formData.name,
                 type: formData.type,
-                capacity: formData.rows * formData.seatsPerRow,
+                capacity: formData.type === 'STANDING' ? 0 : formData.rows * formData.seatsPerRow,
                 layoutConfig: {
                     rows: formData.rows,
                     seatsPerRow: formData.seatsPerRow,
                     basePrice: formData.basePrice,
                     color: formData.color,
                 },
-            });
-            setShowAddModal(false);
-            setFormData({
-                name: '',
-                type: 'SEATED',
-                rows: 10,
-                seatsPerRow: 20,
-                basePrice: 50,
-                color: SECTION_COLORS[0].value,
-            });
+            };
+
+            if (editingSection) {
+                await updateSection.mutateAsync({
+                    sectionId: editingSection.id,
+                    ...payload,
+                });
+            } else {
+                await createSection.mutateAsync(payload);
+            }
+
+            setShowModal(false);
+            setEditingSection(null);
+            setFormData(defaultFormData);
             refetch();
         } catch (error) {
-            console.error('Error creating section:', error);
+            console.error('Error saving section:', error);
+        }
+    };
+
+    const handleDelete = async (sectionId: string) => {
+        try {
+            await deleteSection.mutateAsync({ sectionId, venueId });
+            setShowDeleteConfirm(null);
+            refetch();
+        } catch (error) {
+            console.error('Error deleting section:', error);
         }
     };
 
     const isLoading = venueLoading || sectionsLoading;
+    const isSaving = createSection.isPending || updateSection.isPending;
 
     if (isLoading) {
         return (
@@ -118,15 +156,10 @@ function VenueLayoutEditorContent({ venueId }: { venueId: string }) {
                         <p className="text-base-content/60">{venue.name}</p>
                     </div>
                 </div>
-                <div className="flex gap-2">
-                    <button
-                        className="btn btn-primary"
-                        onClick={() => setShowAddModal(true)}
-                    >
-                        <Plus className="w-4 h-4" />
-                        Nueva Sección
-                    </button>
-                </div>
+                <button className="btn btn-primary" onClick={openAddModal}>
+                    <Plus className="w-4 h-4" />
+                    Nueva Sección
+                </button>
             </div>
 
             {/* Main Grid */}
@@ -137,7 +170,6 @@ function VenueLayoutEditorContent({ venueId }: { venueId: string }) {
                         <div className="card-body">
                             <h2 className="card-title">Vista Previa</h2>
 
-                            {/* Simple Canvas Preview */}
                             <div className="bg-base-300 rounded-xl p-6 min-h-96 relative">
                                 {/* Stage */}
                                 <div className="w-full h-16 bg-gradient-to-r from-primary/30 via-primary/50 to-primary/30 rounded-lg mb-8 flex items-center justify-center">
@@ -148,7 +180,12 @@ function VenueLayoutEditorContent({ venueId }: { venueId: string }) {
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                     {sections && sections.length > 0 ? (
                                         sections.map((section) => (
-                                            <SectionPreviewCard key={section.id} section={section} />
+                                            <SectionPreviewCard
+                                                key={section.id}
+                                                section={section}
+                                                onEdit={() => openEditModal(section)}
+                                                onDelete={() => setShowDeleteConfirm(section.id)}
+                                            />
                                         ))
                                     ) : (
                                         <div className="col-span-full flex flex-col items-center justify-center py-12 text-center">
@@ -165,7 +202,7 @@ function VenueLayoutEditorContent({ venueId }: { venueId: string }) {
                     </div>
                 </div>
 
-                {/* Sidebar - Sections List */}
+                {/* Sidebar */}
                 <div className="space-y-4">
                     <div className="card bg-base-200">
                         <div className="card-body">
@@ -177,7 +214,12 @@ function VenueLayoutEditorContent({ venueId }: { venueId: string }) {
                             <div className="space-y-2 max-h-96 overflow-y-auto">
                                 {sections && sections.length > 0 ? (
                                     sections.map((section) => (
-                                        <SectionListItem key={section.id} section={section} />
+                                        <SectionListItem
+                                            key={section.id}
+                                            section={section}
+                                            onEdit={() => openEditModal(section)}
+                                            onDelete={() => setShowDeleteConfirm(section.id)}
+                                        />
                                     ))
                                 ) : (
                                     <p className="text-center text-base-content/60 py-4">
@@ -204,11 +246,13 @@ function VenueLayoutEditorContent({ venueId }: { venueId: string }) {
                 </div>
             </div>
 
-            {/* Add Section Modal */}
-            {showAddModal && (
+            {/* Add/Edit Modal */}
+            {showModal && (
                 <div className="modal modal-open">
                     <div className="modal-box">
-                        <h3 className="font-bold text-lg mb-4">Nueva Sección</h3>
+                        <h3 className="font-bold text-lg mb-4">
+                            {editingSection ? 'Editar Sección' : 'Nueva Sección'}
+                        </h3>
 
                         <div className="space-y-4">
                             {/* Name */}
@@ -300,7 +344,7 @@ function VenueLayoutEditorContent({ venueId }: { venueId: string }) {
                                         <button
                                             key={color.value}
                                             type="button"
-                                            className={`w-8 h-8 rounded-full border-2 ${formData.color === color.value ? 'border-white ring-2 ring-primary' : 'border-transparent'}`}
+                                            className={`w-8 h-8 rounded-full border-2 transition-all ${formData.color === color.value ? 'border-white ring-2 ring-primary scale-110' : 'border-transparent hover:scale-105'}`}
                                             style={{ backgroundColor: color.value }}
                                             onClick={() => setFormData({ ...formData, color: color.value })}
                                             title={color.name}
@@ -323,21 +367,53 @@ function VenueLayoutEditorContent({ venueId }: { venueId: string }) {
                         <div className="modal-action">
                             <button
                                 className="btn btn-ghost"
-                                onClick={() => setShowAddModal(false)}
+                                onClick={() => {
+                                    setShowModal(false);
+                                    setEditingSection(null);
+                                }}
                             >
                                 Cancelar
                             </button>
                             <button
                                 className="btn btn-primary"
-                                onClick={handleAddSection}
-                                disabled={!formData.name || createSection.isPending}
+                                onClick={handleSave}
+                                disabled={!formData.name || isSaving}
                             >
-                                {createSection.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
-                                Crear Sección
+                                {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}
+                                {editingSection ? 'Guardar Cambios' : 'Crear Sección'}
                             </button>
                         </div>
                     </div>
-                    <div className="modal-backdrop" onClick={() => setShowAddModal(false)} />
+                    <div className="modal-backdrop" onClick={() => {
+                        setShowModal(false);
+                        setEditingSection(null);
+                    }} />
+                </div>
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {showDeleteConfirm && (
+                <div className="modal modal-open">
+                    <div className="modal-box">
+                        <h3 className="font-bold text-lg">¿Eliminar sección?</h3>
+                        <p className="py-4">
+                            Esta acción eliminará la sección y todos sus asientos. No se puede deshacer.
+                        </p>
+                        <div className="modal-action">
+                            <button className="btn btn-ghost" onClick={() => setShowDeleteConfirm(null)}>
+                                Cancelar
+                            </button>
+                            <button
+                                className="btn btn-error"
+                                onClick={() => handleDelete(showDeleteConfirm)}
+                                disabled={deleteSection.isPending}
+                            >
+                                {deleteSection.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
+                                Eliminar
+                            </button>
+                        </div>
+                    </div>
+                    <div className="modal-backdrop" onClick={() => setShowDeleteConfirm(null)} />
                 </div>
             )}
         </div>
@@ -345,7 +421,15 @@ function VenueLayoutEditorContent({ venueId }: { venueId: string }) {
 }
 
 // Section Preview Card
-function SectionPreviewCard({ section }: { section: Section }) {
+function SectionPreviewCard({
+    section,
+    onEdit,
+    onDelete
+}: {
+    section: Section;
+    onEdit: () => void;
+    onDelete: () => void;
+}) {
     const config = section.layoutConfig || {};
     const rows = config.rows || 5;
     const seatsPerRow = config.seatsPerRow || 10;
@@ -353,9 +437,27 @@ function SectionPreviewCard({ section }: { section: Section }) {
 
     return (
         <div
-            className="p-4 rounded-xl border-2 transition-all hover:scale-105"
+            className="p-4 rounded-xl border-2 transition-all hover:scale-102 group relative"
             style={{ borderColor: color, backgroundColor: `${color}20` }}
         >
+            {/* Actions */}
+            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                <button
+                    className="btn btn-xs btn-ghost btn-circle bg-base-100/80"
+                    onClick={onEdit}
+                    title="Editar"
+                >
+                    <Edit3 className="w-3 h-3" />
+                </button>
+                <button
+                    className="btn btn-xs btn-ghost btn-circle bg-base-100/80 text-error"
+                    onClick={onDelete}
+                    title="Eliminar"
+                >
+                    <Trash2 className="w-3 h-3" />
+                </button>
+            </div>
+
             <div className="flex items-center justify-between mb-2">
                 <span className="font-semibold" style={{ color }}>{section.name}</span>
                 <span className="badge badge-sm">{section.type}</span>
@@ -374,33 +476,53 @@ function SectionPreviewCard({ section }: { section: Section }) {
                 ))}
             </div>
 
-            <p className="text-xs text-base-content/60 mt-2">
-                {section.capacity || (rows * seatsPerRow)} asientos
-            </p>
+            <div className="flex justify-between items-center mt-2">
+                <p className="text-xs text-base-content/60">
+                    {section.capacity || (rows * seatsPerRow)} asientos
+                </p>
+                {config.basePrice && (
+                    <p className="text-xs font-medium" style={{ color }}>
+                        S/ {config.basePrice}
+                    </p>
+                )}
+            </div>
         </div>
     );
 }
 
 // Section List Item
-function SectionListItem({ section }: { section: Section }) {
+function SectionListItem({
+    section,
+    onEdit,
+    onDelete
+}: {
+    section: Section;
+    onEdit: () => void;
+    onDelete: () => void;
+}) {
     const config = section.layoutConfig || {};
     const color = config.color || '#3b82f6';
 
     return (
-        <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-base-300 transition-colors">
+        <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-base-300 transition-colors group">
             <div
-                className="w-3 h-3 rounded-full"
+                className="w-3 h-3 rounded-full flex-shrink-0"
                 style={{ backgroundColor: color }}
             />
             <div className="flex-1 min-w-0">
                 <p className="font-medium truncate">{section.name}</p>
                 <p className="text-xs text-base-content/60">
-                    {section.capacity || 0} asientos
+                    {section.capacity || 0} asientos • S/ {config.basePrice || 0}
                 </p>
             </div>
-            <button className="btn btn-ghost btn-xs btn-circle">
-                <Edit3 className="w-3 h-3" />
-            </button>
+            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button className="btn btn-ghost btn-xs btn-circle" onClick={onEdit}>
+                    <Edit3 className="w-3 h-3" />
+                </button>
+                <button className="btn btn-ghost btn-xs btn-circle text-error" onClick={onDelete}>
+                    <Trash2 className="w-3 h-3" />
+                </button>
+            </div>
         </div>
     );
 }

@@ -127,3 +127,44 @@ export function useCreateSection() {
         },
     });
 }
+
+// Update section
+interface UpdateSectionRequest {
+    sectionId: string;
+    venueId: string;
+    name?: string;
+    type?: string;
+    capacity?: number;
+    layoutConfig?: Record<string, unknown>;
+}
+
+export function useUpdateSection() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async ({ sectionId, ...data }: UpdateSectionRequest) => {
+            const response = await api.put<ApiResponse<Section>>(
+                `${API_ROUTES.SECTIONS}/${sectionId}`,
+                data
+            );
+            return response.data.data;
+        },
+        onSuccess: (_, { venueId }) => {
+            queryClient.invalidateQueries({ queryKey: ['venue-sections', venueId] });
+        },
+    });
+}
+
+// Delete section
+export function useDeleteSection() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async ({ sectionId, venueId }: { sectionId: string; venueId: string }) => {
+            await api.delete(`${API_ROUTES.SECTIONS}/${sectionId}`);
+        },
+        onSuccess: (_, { venueId }) => {
+            queryClient.invalidateQueries({ queryKey: ['venue-sections', venueId] });
+        },
+    });
+}
