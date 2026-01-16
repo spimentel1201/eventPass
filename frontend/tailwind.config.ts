@@ -11,6 +11,14 @@ const config: Config = {
             fontFamily: {
                 sans: ['Inter', 'system-ui', 'sans-serif'],
             },
+            colors: {
+                // Custom NeonPass colors for non-DaisyUI usage
+                neon: {
+                    primary: '#6366f1',
+                    secondary: '#d946ef',
+                    accent: '#06b6d4',
+                },
+            },
         },
     },
     plugins: [require('daisyui')],
@@ -18,17 +26,26 @@ const config: Config = {
         themes: [
             {
                 neonpass: {
-                    'primary': '#6366f1',        // Indigo - Acciones principales
-                    'secondary': '#d946ef',      // Fuchsia - Badges VIP
-                    'accent': '#06b6d4',         // Cyan - Elementos menores
-                    'neutral': '#1e293b',        // Slate 800
-                    'base-100': '#0f172a',       // Slate 900 - Fondo principal
-                    'base-200': '#1e293b',       // Slate 800 - Tarjetas, Sidebars
-                    'base-300': '#334155',       // Slate 700
-                    'info': '#3b82f6',           // Blue - Asiento seleccionado
-                    'success': '#22c55e',        // Green - Asiento disponible
-                    'warning': '#f59e0b',        // Amber - Reservado
-                    'error': '#ef4444',          // Red - Ocupado
+                    'primary': '#6366f1',
+                    'primary-content': '#ffffff',
+                    'secondary': '#d946ef',
+                    'secondary-content': '#ffffff',
+                    'accent': '#06b6d4',
+                    'accent-content': '#ffffff',
+                    'neutral': '#1e293b',
+                    'neutral-content': '#d1d5db',
+                    'base-100': '#0f172a',
+                    'base-200': '#1e293b',
+                    'base-300': '#334155',
+                    'base-content': '#e2e8f0',
+                    'info': '#3b82f6',
+                    'info-content': '#ffffff',
+                    'success': '#22c55e',
+                    'success-content': '#ffffff',
+                    'warning': '#f59e0b',
+                    'warning-content': '#000000',
+                    'error': '#ef4444',
+                    'error-content': '#ffffff',
                 },
             },
         ],

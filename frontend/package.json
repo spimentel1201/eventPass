@@ -15,7 +15,7 @@
     "@tanstack/react-virtual": "^3.13.18",
     "axios": "^1.13.2",
     "clsx": "^2.1.1",
-    "daisyui": "^5.5.14",
+    "daisyui": "^4.12.24",
     "framer-motion": "^12.26.2",
     "konva": "^10.2.0",
     "lucide-react": "^0.562.0",
