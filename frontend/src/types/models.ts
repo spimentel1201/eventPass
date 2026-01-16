@@ -84,7 +84,7 @@ export interface Seat {
     status?: SeatStatus;
 }
 
-export type SeatStatus = 'AVAILABLE' | 'SOLD' | 'RESERVED' | 'LOCKED';
+export type SeatStatus = 'AVAILABLE' | 'SOLD' | 'RESERVED' | 'LOCKED' | 'SELECTED';
 
 export interface SeatingMap {
     eventId: string;
