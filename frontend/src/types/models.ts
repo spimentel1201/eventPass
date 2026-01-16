@@ -8,10 +8,14 @@ export interface Event {
     description: string;
     startTime: string;
     endTime: string;
+    startDate?: string;   // Alias for frontend compatibility
+    endDate?: string;     // Alias for frontend compatibility
     status: EventStatus;
     createdAt: string;
     images?: EventImages;
     metadata?: Record<string, unknown>;
+    venueName?: string;   // Joined from venue
+    thumbnailUrl?: string; // Extracted from images
 }
 
 export interface EventSummary {
