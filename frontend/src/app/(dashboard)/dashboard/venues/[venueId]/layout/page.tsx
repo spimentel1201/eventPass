@@ -9,10 +9,11 @@ import {
     Plus,
     Trash2,
     Edit3,
-    Grid3X3,
     Settings,
+    Save,
 } from 'lucide-react';
-import { useVenue, useVenueSections, useCreateSection, useUpdateSection, useDeleteSection } from '@/hooks/useVenues';
+import { useVenue, useVenueSections, useCreateSection, useUpdateSection, useDeleteSection, useSaveVenueLayout } from '@/hooks/useVenues';
+import { VenueCanvasEditorWrapper } from '@/components/features/venues';
 import type { Section } from '@/types';
 
 interface SectionFormData {
@@ -22,6 +23,8 @@ interface SectionFormData {
     seatsPerRow: number;
     basePrice: number;
     color: string;
+    x: number;
+    y: number;
 }
 
 const SECTION_COLORS = [
@@ -47,6 +50,8 @@ const defaultFormData: SectionFormData = {
     seatsPerRow: 20,
     basePrice: 50,
     color: SECTION_COLORS[0].value,
+    x: 100,
+    y: 150,
 };
 
 function VenueLayoutEditorContent({ venueId }: { venueId: string }) {
@@ -55,15 +60,21 @@ function VenueLayoutEditorContent({ venueId }: { venueId: string }) {
     const createSection = useCreateSection();
     const updateSection = useUpdateSection();
     const deleteSection = useDeleteSection();
+    const saveLayout = useSaveVenueLayout();
 
     const [showModal, setShowModal] = useState(false);
     const [editingSection, setEditingSection] = useState<Section | null>(null);
+    const [selectedSection, setSelectedSection] = useState<Section | null>(null);
     const [formData, setFormData] = useState<SectionFormData>(defaultFormData);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
+    const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
     const openAddModal = () => {
         setEditingSection(null);
-        setFormData(defaultFormData);
+        // Position new section based on existing sections
+        const nextX = 100 + ((sections?.length || 0) % 3) * 250;
+        const nextY = 150 + Math.floor((sections?.length || 0) / 3) * 200;
+        setFormData({ ...defaultFormData, x: nextX, y: nextY });
         setShowModal(true);
     };
 
@@ -77,6 +88,8 @@ function VenueLayoutEditorContent({ venueId }: { venueId: string }) {
             seatsPerRow: config.seatsPerRow || 20,
             basePrice: config.basePrice || 50,
             color: config.color || SECTION_COLORS[0].value,
+            x: config.x || 100,
+            y: config.y || 150,
         });
         setShowModal(true);
     };
@@ -93,6 +106,8 @@ function VenueLayoutEditorContent({ venueId }: { venueId: string }) {
                     seatsPerRow: formData.seatsPerRow,
                     basePrice: formData.basePrice,
                     color: formData.color,
+                    x: formData.x,
+                    y: formData.y,
                 },
             };
 
@@ -118,10 +133,34 @@ function VenueLayoutEditorContent({ venueId }: { venueId: string }) {
         try {
             await deleteSection.mutateAsync({ sectionId, venueId });
             setShowDeleteConfirm(null);
+            setSelectedSection(null);
             refetch();
         } catch (error) {
             console.error('Error deleting section:', error);
         }
+    };
+
+    const handleSectionMove = async (sectionId: string, x: number, y: number) => {
+        const section = sections?.find(s => s.id === sectionId);
+        if (!section) return;
+
+        const config = section.layoutConfig || {};
+        try {
+            await updateSection.mutateAsync({
+                sectionId,
+                venueId,
+                layoutConfig: { ...config, x, y },
+            });
+            setHasUnsavedChanges(true);
+            refetch();
+        } catch (error) {
+            console.error('Error moving section:', error);
+        }
+    };
+
+    const handleSaveLayout = async () => {
+        // Save current layout positions
+        setHasUnsavedChanges(false);
     };
 
     const isLoading = venueLoading || sectionsLoading;
@@ -144,7 +183,7 @@ function VenueLayoutEditorContent({ venueId }: { venueId: string }) {
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-4">
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
@@ -156,88 +195,103 @@ function VenueLayoutEditorContent({ venueId }: { venueId: string }) {
                         <p className="text-base-content/60">{venue.name}</p>
                     </div>
                 </div>
-                <button className="btn btn-primary" onClick={openAddModal}>
-                    <Plus className="w-4 h-4" />
-                    Nueva Sección
-                </button>
+                {hasUnsavedChanges && (
+                    <button className="btn btn-success" onClick={handleSaveLayout}>
+                        <Save className="w-4 h-4" />
+                        Guardar Layout
+                    </button>
+                )}
             </div>
 
             {/* Main Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Canvas Preview */}
-                <div className="lg:col-span-2">
+            <div className="grid grid-cols-1 xl:grid-cols-4 gap-4">
+                {/* Canvas Editor */}
+                <div className="xl:col-span-3">
                     <div className="card bg-base-200">
-                        <div className="card-body">
-                            <h2 className="card-title">Vista Previa</h2>
-
-                            <div className="bg-base-300 rounded-xl p-6 min-h-96 relative">
-                                {/* Stage */}
-                                <div className="w-full h-16 bg-gradient-to-r from-primary/30 via-primary/50 to-primary/30 rounded-lg mb-8 flex items-center justify-center">
-                                    <span className="text-primary-content font-bold text-lg">ESCENARIO</span>
-                                </div>
-
-                                {/* Sections Grid */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    {sections && sections.length > 0 ? (
-                                        sections.map((section) => (
-                                            <SectionPreviewCard
-                                                key={section.id}
-                                                section={section}
-                                                onEdit={() => openEditModal(section)}
-                                                onDelete={() => setShowDeleteConfirm(section.id)}
-                                            />
-                                        ))
-                                    ) : (
-                                        <div className="col-span-full flex flex-col items-center justify-center py-12 text-center">
-                                            <Grid3X3 className="w-16 h-16 text-base-content/20 mb-4" />
-                                            <p className="text-base-content/60">No hay secciones</p>
-                                            <p className="text-sm text-base-content/40">
-                                                Agrega secciones para crear la distribución de asientos
-                                            </p>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
+                        <div className="card-body p-4">
+                            <VenueCanvasEditorWrapper
+                                sections={sections || []}
+                                selectedSectionId={selectedSection?.id || null}
+                                onSectionSelect={setSelectedSection}
+                                onSectionMove={handleSectionMove}
+                                onAddSection={openAddModal}
+                            />
                         </div>
                     </div>
                 </div>
 
                 {/* Sidebar */}
                 <div className="space-y-4">
+                    {/* Selected Section Info */}
+                    {selectedSection && (
+                        <div className="card bg-primary/10 border border-primary">
+                            <div className="card-body p-4">
+                                <h3 className="font-bold text-primary">{selectedSection.name}</h3>
+                                <div className="text-sm space-y-1">
+                                    <p>Tipo: {selectedSection.type}</p>
+                                    <p>Capacidad: {selectedSection.capacity} asientos</p>
+                                    <p>Precio: S/ {selectedSection.layoutConfig?.basePrice || 0}</p>
+                                </div>
+                                <div className="flex gap-2 mt-2">
+                                    <button
+                                        className="btn btn-sm btn-outline flex-1"
+                                        onClick={() => openEditModal(selectedSection)}
+                                    >
+                                        <Edit3 className="w-3 h-3" />
+                                        Editar
+                                    </button>
+                                    <button
+                                        className="btn btn-sm btn-error btn-outline"
+                                        onClick={() => setShowDeleteConfirm(selectedSection.id)}
+                                    >
+                                        <Trash2 className="w-3 h-3" />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Sections List */}
                     <div className="card bg-base-200">
-                        <div className="card-body">
-                            <h2 className="card-title flex items-center gap-2">
-                                <Settings className="w-5 h-5" />
+                        <div className="card-body p-4">
+                            <h2 className="card-title text-base flex items-center gap-2">
+                                <Settings className="w-4 h-4" />
                                 Secciones ({sections?.length || 0})
                             </h2>
 
-                            <div className="space-y-2 max-h-96 overflow-y-auto">
+                            <div className="space-y-1 max-h-64 overflow-y-auto">
                                 {sections && sections.length > 0 ? (
                                     sections.map((section) => (
                                         <SectionListItem
                                             key={section.id}
                                             section={section}
+                                            isSelected={selectedSection?.id === section.id}
+                                            onSelect={() => setSelectedSection(section)}
                                             onEdit={() => openEditModal(section)}
-                                            onDelete={() => setShowDeleteConfirm(section.id)}
                                         />
                                     ))
                                 ) : (
-                                    <p className="text-center text-base-content/60 py-4">
+                                    <p className="text-center text-base-content/60 py-4 text-sm">
                                         Sin secciones
                                     </p>
                                 )}
                             </div>
+
+                            <button className="btn btn-primary btn-sm mt-2" onClick={openAddModal}>
+                                <Plus className="w-4 h-4" />
+                                Nueva Sección
+                            </button>
                         </div>
                     </div>
 
                     {/* Venue Info */}
                     <div className="card bg-base-200">
-                        <div className="card-body">
-                            <h2 className="card-title text-lg">Info del Recinto</h2>
-                            <div className="space-y-2 text-sm">
+                        <div className="card-body p-4">
+                            <h2 className="card-title text-base">Info del Recinto</h2>
+                            <div className="space-y-1 text-sm">
                                 <p><strong>Nombre:</strong> {venue.name}</p>
                                 <p><strong>Dirección:</strong> {venue.address || 'No especificada'}</p>
-                                <p><strong>Capacidad total:</strong> {
+                                <p><strong>Capacidad:</strong> {
                                     sections?.reduce((acc, s) => acc + (s.capacity || 0), 0) || 0
                                 } asientos</p>
                             </div>
@@ -305,7 +359,7 @@ function VenueLayoutEditorContent({ venueId }: { venueId: string }) {
                                     </div>
                                     <div className="form-control">
                                         <label className="label">
-                                            <span className="label-text">Asientos por fila</span>
+                                            <span className="label-text">Asientos/fila</span>
                                         </label>
                                         <input
                                             type="number"
@@ -380,7 +434,7 @@ function VenueLayoutEditorContent({ venueId }: { venueId: string }) {
                                 disabled={!formData.name || isSaving}
                             >
                                 {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}
-                                {editingSection ? 'Guardar Cambios' : 'Crear Sección'}
+                                {editingSection ? 'Guardar' : 'Crear'}
                             </button>
                         </div>
                     </div>
@@ -397,7 +451,7 @@ function VenueLayoutEditorContent({ venueId }: { venueId: string }) {
                     <div className="modal-box">
                         <h3 className="font-bold text-lg">¿Eliminar sección?</h3>
                         <p className="py-4">
-                            Esta acción eliminará la sección y todos sus asientos. No se puede deshacer.
+                            Esta acción eliminará la sección y todos sus asientos.
                         </p>
                         <div className="modal-action">
                             <button className="btn btn-ghost" onClick={() => setShowDeleteConfirm(null)}>
@@ -420,109 +474,42 @@ function VenueLayoutEditorContent({ venueId }: { venueId: string }) {
     );
 }
 
-// Section Preview Card
-function SectionPreviewCard({
+// Section List Item
+function SectionListItem({
     section,
+    isSelected,
+    onSelect,
     onEdit,
-    onDelete
 }: {
     section: Section;
+    isSelected: boolean;
+    onSelect: () => void;
     onEdit: () => void;
-    onDelete: () => void;
 }) {
     const config = section.layoutConfig || {};
-    const rows = config.rows || 5;
-    const seatsPerRow = config.seatsPerRow || 10;
     const color = config.color || '#3b82f6';
 
     return (
         <div
-            className="p-4 rounded-xl border-2 transition-all hover:scale-102 group relative"
-            style={{ borderColor: color, backgroundColor: `${color}20` }}
+            className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors ${isSelected ? 'bg-primary/20 border border-primary' : 'hover:bg-base-300'}`}
+            onClick={onSelect}
         >
-            {/* Actions */}
-            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-                <button
-                    className="btn btn-xs btn-ghost btn-circle bg-base-100/80"
-                    onClick={onEdit}
-                    title="Editar"
-                >
-                    <Edit3 className="w-3 h-3" />
-                </button>
-                <button
-                    className="btn btn-xs btn-ghost btn-circle bg-base-100/80 text-error"
-                    onClick={onDelete}
-                    title="Eliminar"
-                >
-                    <Trash2 className="w-3 h-3" />
-                </button>
-            </div>
-
-            <div className="flex items-center justify-between mb-2">
-                <span className="font-semibold" style={{ color }}>{section.name}</span>
-                <span className="badge badge-sm">{section.type}</span>
-            </div>
-
-            {/* Mini seat grid preview */}
-            <div className="grid gap-0.5" style={{
-                gridTemplateColumns: `repeat(${Math.min(seatsPerRow, 10)}, 1fr)`
-            }}>
-                {Array.from({ length: Math.min(rows * Math.min(seatsPerRow, 10), 50) }).map((_, i) => (
-                    <div
-                        key={i}
-                        className="aspect-square rounded-sm"
-                        style={{ backgroundColor: color, opacity: 0.5 }}
-                    />
-                ))}
-            </div>
-
-            <div className="flex justify-between items-center mt-2">
-                <p className="text-xs text-base-content/60">
-                    {section.capacity || (rows * seatsPerRow)} asientos
-                </p>
-                {config.basePrice && (
-                    <p className="text-xs font-medium" style={{ color }}>
-                        S/ {config.basePrice}
-                    </p>
-                )}
-            </div>
-        </div>
-    );
-}
-
-// Section List Item
-function SectionListItem({
-    section,
-    onEdit,
-    onDelete
-}: {
-    section: Section;
-    onEdit: () => void;
-    onDelete: () => void;
-}) {
-    const config = section.layoutConfig || {};
-    const color = config.color || '#3b82f6';
-
-    return (
-        <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-base-300 transition-colors group">
             <div
                 className="w-3 h-3 rounded-full flex-shrink-0"
                 style={{ backgroundColor: color }}
             />
             <div className="flex-1 min-w-0">
-                <p className="font-medium truncate">{section.name}</p>
+                <p className="font-medium text-sm truncate">{section.name}</p>
                 <p className="text-xs text-base-content/60">
-                    {section.capacity || 0} asientos • S/ {config.basePrice || 0}
+                    {section.capacity || 0} • S/{config.basePrice || 0}
                 </p>
             </div>
-            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button className="btn btn-ghost btn-xs btn-circle" onClick={onEdit}>
-                    <Edit3 className="w-3 h-3" />
-                </button>
-                <button className="btn btn-ghost btn-xs btn-circle text-error" onClick={onDelete}>
-                    <Trash2 className="w-3 h-3" />
-                </button>
-            </div>
+            <button
+                className="btn btn-ghost btn-xs btn-circle opacity-0 group-hover:opacity-100"
+                onClick={(e) => { e.stopPropagation(); onEdit(); }}
+            >
+                <Edit3 className="w-3 h-3" />
+            </button>
         </div>
     );
 }
