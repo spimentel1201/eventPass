@@ -27,7 +27,9 @@ export const API_ROUTES = {
 
     // Orders
     ORDERS: '/orders',
-    MY_ORDERS: '/orders/my',
+    CHECKOUT: '/orders/checkout',
+    MY_ORDERS: '/orders',
+    ORDER: (id: string) => `/orders/${id}`,
 
     // Admin
     ADMIN_DASHBOARD: '/admin/dashboard',
