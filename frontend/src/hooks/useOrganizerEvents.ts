@@ -26,6 +26,7 @@ interface CreateEventRequest {
     endDate: string;
     organizationId?: string;
     status?: string;
+    metadata?: string;  // JSON string with media and additional info
 }
 
 interface BackendEventRequest {
@@ -36,6 +37,7 @@ interface BackendEventRequest {
     startTime: string;  // Backend format: LocalDateTime
     endTime: string;
     status: string;
+    metadata?: string;  // JSON string
 }
 
 // Get organizer's events
