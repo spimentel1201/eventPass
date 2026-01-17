@@ -1,8 +1,8 @@
 package com.neonpass.infrastructure.adapter.in.web.dto.request;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.neonpass.domain.model.enums.EventStatus;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -20,10 +20,8 @@ import java.util.UUID;
 @AllArgsConstructor
 public class EventRequest {
 
-    @NotNull(message = "El ID de la organización es requerido")
     private UUID organizationId;
 
-    @NotNull(message = "El ID del recinto es requerido")
     private UUID venueId;
 
     @NotBlank(message = "El título es requerido")
@@ -31,9 +29,10 @@ public class EventRequest {
 
     private String description;
 
-    @NotNull(message = "La fecha de inicio es requerida")
+    @JsonAlias({ "startDate", "startTime" })
     private LocalDateTime startTime;
 
+    @JsonAlias({ "endDate", "endTime" })
     private LocalDateTime endTime;
 
     @Builder.Default

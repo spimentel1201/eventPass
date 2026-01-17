@@ -7,6 +7,7 @@ import com.neonpass.domain.model.Venue;
 import com.neonpass.domain.port.in.CreateEventUseCase;
 import com.neonpass.domain.port.in.GetEventUseCase;
 import com.neonpass.domain.port.in.ListEventsUseCase;
+import com.neonpass.domain.port.out.EventRepository;
 import com.neonpass.domain.port.out.VenueRepository;
 import com.neonpass.infrastructure.adapter.in.web.dto.request.EventRequest;
 import com.neonpass.infrastructure.adapter.in.web.dto.response.EventResponse;
@@ -41,6 +42,7 @@ public class EventController {
     private final CreateEventUseCase createEventUseCase;
     private final GetEventUseCase getEventUseCase;
     private final ListEventsUseCase listEventsUseCase;
+    private final EventRepository eventRepository;
     private final VenueRepository venueRepository;
     private final ObjectMapper objectMapper;
 
@@ -96,6 +98,39 @@ public class EventController {
                 pagedEvents, page, size, allEvents.size());
 
         return ResponseEntity.ok(ApiResponse.success(pageResponse));
+    }
+
+    @PutMapping("/{eventId}")
+    @Operation(summary = "Actualizar evento", description = "Actualiza un evento existente")
+    public ResponseEntity<ApiResponse<EventResponse>> updateEvent(
+            @PathVariable UUID eventId,
+            @RequestBody EventRequest request) {
+
+        // Get existing event
+        Event existingEvent = getEventUseCase.execute(eventId);
+
+        // Update fields
+        Event updatedEvent = Event.builder()
+                .id(existingEvent.getId())
+                .organizationId(request.getOrganizationId() != null ? request.getOrganizationId()
+                        : existingEvent.getOrganizationId())
+                .venueId(request.getVenueId() != null ? request.getVenueId() : existingEvent.getVenueId())
+                .title(request.getTitle() != null ? request.getTitle() : existingEvent.getTitle())
+                .description(
+                        request.getDescription() != null ? request.getDescription() : existingEvent.getDescription())
+                .startTime(request.getStartTime() != null ? request.getStartTime() : existingEvent.getStartTime())
+                .endTime(request.getEndTime() != null ? request.getEndTime() : existingEvent.getEndTime())
+                .status(request.getStatus() != null ? request.getStatus() : existingEvent.getStatus())
+                .metadata(request.getMetadata() != null ? request.getMetadata() : existingEvent.getMetadata())
+                .createdAt(existingEvent.getCreatedAt())
+                .updatedAt(java.time.LocalDateTime.now())
+                .deleted(existingEvent.getDeleted())
+                .build();
+
+        // Save using repository (inject it)
+        Event savedEvent = eventRepository.save(updatedEvent);
+
+        return ResponseEntity.ok(ApiResponse.success(toFullResponse(savedEvent)));
     }
 
     /**
