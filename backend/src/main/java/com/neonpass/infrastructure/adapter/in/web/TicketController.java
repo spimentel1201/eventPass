@@ -1,5 +1,6 @@
 package com.neonpass.infrastructure.adapter.in.web;
 
+import com.neonpass.application.service.TicketPdfService;
 import com.neonpass.domain.model.Event;
 import com.neonpass.domain.model.Order;
 import com.neonpass.domain.model.Seat;
@@ -25,6 +26,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -45,6 +48,7 @@ import java.util.UUID;
 public class TicketController {
 
         private final ValidateTicketUseCase validateTicketUseCase;
+        private final TicketPdfService ticketPdfService;
         private final OrderRepository orderRepository;
         private final TicketRepository ticketRepository;
         private final EventRepository eventRepository;
@@ -213,5 +217,43 @@ public class TicketController {
                 }
 
                 return ResponseEntity.ok(ApiResponse.success(responseBuilder.build()));
+        }
+
+        @GetMapping("/{ticketId}/download")
+        @Operation(summary = "Descargar ticket PDF", description = "Descarga el ticket en formato PDF con código QR")
+        public ResponseEntity<byte[]> downloadTicketPdf(
+                        @PathVariable UUID ticketId,
+                        @AuthenticationPrincipal UUID userId) {
+
+                log.info("Descargando PDF para ticket {} por usuario {}", ticketId, userId);
+
+                // Verify ticket exists
+                Ticket ticket = ticketRepository.findById(ticketId)
+                                .orElseThrow(() -> new RuntimeException("Ticket not found"));
+
+                // Verify ownership through order
+                Order order = orderRepository.findById(ticket.getOrderId())
+                                .orElseThrow(() -> new RuntimeException("Order not found"));
+
+                if (!order.getUserId().equals(userId)) {
+                        throw new RuntimeException("Access denied");
+                }
+
+                // Generate PDF
+                byte[] pdfBytes = ticketPdfService.generateTicketPdf(ticketId);
+
+                // Get event name for filename
+                String filename = "ticket_" + ticketId.toString().substring(0, 8) + ".pdf";
+                eventRepository.findById(ticket.getEventId()).ifPresent(event -> {
+                        // Use event title for better filename
+                });
+
+                HttpHeaders headers = new HttpHeaders();
+                headers.setContentType(MediaType.APPLICATION_PDF);
+                headers.setContentDispositionFormData("attachment", filename);
+                headers.setContentLength(pdfBytes.length);
+
+                log.info("PDF generado exitosamente: {} bytes", pdfBytes.length);
+                return ResponseEntity.ok().headers(headers).body(pdfBytes);
         }
 }
