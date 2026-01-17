@@ -14,6 +14,7 @@ import {
     LogOut,
     User,
     ChevronDown,
+    Shield,
 } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 
@@ -28,6 +29,9 @@ const menuItems = [
     { href: '/dashboard/orders', label: 'Órdenes', icon: Ticket },
     { href: '/dashboard/settings', label: 'Configuración', icon: Settings },
 ];
+
+// Admin-only menu item
+const adminItem = { href: '/dashboard/admin/users', label: 'Usuarios', icon: Shield };
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
     const pathname = usePathname();
@@ -58,15 +62,52 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
                     {/* Navigation */}
                     <nav className="flex-1 py-4 px-3 space-y-1">
-                        {menuItems.map((item) => {
+                        {/* Panel - first item */}
+                        {(() => {
+                            const item = menuItems[0];
+                            const isActive = pathname === item.href;
+                            return (
+                                <Link
+                                    key={item.href}
+                                    href={item.href}
+                                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${isActive
+                                        ? 'bg-primary text-primary-content'
+                                        : 'hover:bg-base-300 text-base-content/70 hover:text-base-content'
+                                        }`}
+                                >
+                                    <item.icon className="w-5 h-5" />
+                                    <span className="font-medium">{item.label}</span>
+                                </Link>
+                            );
+                        })()}
+
+                        {/* Usuarios - only for ADMIN, right after Panel */}
+                        {user?.role === 'ADMIN' && (() => {
+                            const isActive = pathname === adminItem.href || pathname.startsWith(adminItem.href);
+                            return (
+                                <Link
+                                    href={adminItem.href}
+                                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${isActive
+                                        ? 'bg-primary text-primary-content'
+                                        : 'hover:bg-base-300 text-base-content/70 hover:text-base-content'
+                                        }`}
+                                >
+                                    <adminItem.icon className="w-5 h-5" />
+                                    <span className="font-medium">{adminItem.label}</span>
+                                </Link>
+                            );
+                        })()}
+
+                        {/* Rest of menu items */}
+                        {menuItems.slice(1).map((item) => {
                             const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
                             return (
                                 <Link
                                     key={item.href}
                                     href={item.href}
                                     className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${isActive
-                                            ? 'bg-primary text-primary-content'
-                                            : 'hover:bg-base-300 text-base-content/70 hover:text-base-content'
+                                        ? 'bg-primary text-primary-content'
+                                        : 'hover:bg-base-300 text-base-content/70 hover:text-base-content'
                                         }`}
                                 >
                                     <item.icon className="w-5 h-5" />
