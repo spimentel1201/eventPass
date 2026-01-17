@@ -15,6 +15,8 @@ import {
     User,
     ChevronDown,
     Shield,
+    ShoppingCart,
+    CalendarCheck,
 } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 
@@ -22,7 +24,16 @@ interface DashboardLayoutProps {
     children: React.ReactNode;
 }
 
-const menuItems = [
+// Menu items for CLIENT role (end users who buy tickets)
+const clientMenuItems = [
+    { href: '/dashboard', label: 'Panel', icon: LayoutDashboard },
+    { href: '/dashboard/my-tickets', label: 'Mis Tickets', icon: Ticket },
+    { href: '/dashboard/my-orders', label: 'Mis Compras', icon: ShoppingCart },
+    { href: '/dashboard/my-events', label: 'Próximos Eventos', icon: CalendarCheck },
+];
+
+// Menu items for ORGANIZER role
+const organizerMenuItems = [
     { href: '/dashboard', label: 'Panel', icon: LayoutDashboard },
     { href: '/dashboard/events', label: 'Mis Eventos', icon: Calendar },
     { href: '/dashboard/venues', label: 'Recintos', icon: Building2 },
@@ -30,8 +41,27 @@ const menuItems = [
     { href: '/dashboard/settings', label: 'Configuración', icon: Settings },
 ];
 
-// Admin-only menu item
-const adminItem = { href: '/dashboard/admin/users', label: 'Usuarios', icon: Shield };
+// Menu items for ADMIN role
+const adminMenuItems = [
+    { href: '/dashboard', label: 'Panel', icon: LayoutDashboard },
+    { href: '/dashboard/admin/users', label: 'Usuarios', icon: Shield },
+    { href: '/dashboard/events', label: 'Eventos', icon: Calendar },
+    { href: '/dashboard/venues', label: 'Recintos', icon: Building2 },
+    { href: '/dashboard/orders', label: 'Órdenes', icon: Ticket },
+    { href: '/dashboard/settings', label: 'Configuración', icon: Settings },
+];
+
+function getMenuItemsForRole(role: string | undefined) {
+    switch (role) {
+        case 'ADMIN':
+            return adminMenuItems;
+        case 'ORGANIZER':
+            return organizerMenuItems;
+        case 'CLIENT':
+        default:
+            return clientMenuItems;
+    }
+}
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
     const pathname = usePathname();
@@ -39,9 +69,22 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [userMenuOpen, setUserMenuOpen] = useState(false);
 
+    const menuItems = getMenuItemsForRole(user?.role);
+
     const handleLogout = () => {
         logout();
         window.location.href = '/login';
+    };
+
+    const getRoleBadge = () => {
+        switch (user?.role) {
+            case 'ADMIN':
+                return <span className="badge badge-error badge-sm">Admin</span>;
+            case 'ORGANIZER':
+                return <span className="badge badge-primary badge-sm">Organizador</span>;
+            default:
+                return <span className="badge badge-ghost badge-sm">Cliente</span>;
+        }
     };
 
     return (
@@ -62,45 +105,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
                     {/* Navigation */}
                     <nav className="flex-1 py-4 px-3 space-y-1">
-                        {/* Panel - first item */}
-                        {(() => {
-                            const item = menuItems[0];
-                            const isActive = pathname === item.href;
-                            return (
-                                <Link
-                                    key={item.href}
-                                    href={item.href}
-                                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${isActive
-                                        ? 'bg-primary text-primary-content'
-                                        : 'hover:bg-base-300 text-base-content/70 hover:text-base-content'
-                                        }`}
-                                >
-                                    <item.icon className="w-5 h-5" />
-                                    <span className="font-medium">{item.label}</span>
-                                </Link>
-                            );
-                        })()}
-
-                        {/* Usuarios - only for ADMIN, right after Panel */}
-                        {user?.role === 'ADMIN' && (() => {
-                            const isActive = pathname === adminItem.href || pathname.startsWith(adminItem.href);
-                            return (
-                                <Link
-                                    href={adminItem.href}
-                                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${isActive
-                                        ? 'bg-primary text-primary-content'
-                                        : 'hover:bg-base-300 text-base-content/70 hover:text-base-content'
-                                        }`}
-                                >
-                                    <adminItem.icon className="w-5 h-5" />
-                                    <span className="font-medium">{adminItem.label}</span>
-                                </Link>
-                            );
-                        })()}
-
-                        {/* Rest of menu items */}
-                        {menuItems.slice(1).map((item) => {
-                            const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+                        {menuItems.map((item) => {
+                            const isActive = pathname === item.href ||
+                                (item.href !== '/dashboard' && pathname.startsWith(item.href));
                             return (
                                 <Link
                                     key={item.href}
@@ -127,7 +134,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                             </div>
                             <div className="flex-1 min-w-0">
                                 <p className="font-medium truncate">{user?.fullName || 'Usuario'}</p>
-                                <p className="text-xs text-base-content/60 truncate">{user?.email}</p>
+                                <div className="flex items-center gap-2">
+                                    {getRoleBadge()}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -175,6 +184,28 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                             );
                         })}
                     </nav>
+
+                    {/* Mobile user section */}
+                    <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-base-300">
+                        <div className="flex items-center gap-3 mb-3">
+                            <div className="avatar placeholder">
+                                <div className="w-10 rounded-full bg-primary text-primary-content">
+                                    <span>{user?.fullName?.charAt(0) || 'U'}</span>
+                                </div>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <p className="font-medium truncate">{user?.fullName || 'Usuario'}</p>
+                                {getRoleBadge()}
+                            </div>
+                        </div>
+                        <button
+                            onClick={handleLogout}
+                            className="btn btn-outline btn-error btn-sm w-full"
+                        >
+                            <LogOut className="w-4 h-4" />
+                            Cerrar sesión
+                        </button>
+                    </div>
                 </aside>
             </div>
 

@@ -434,6 +434,225 @@ function OrganizerDashboard() {
     );
 }
 
+// Client Dashboard Component - For end users who buy tickets
+function ClientDashboard() {
+    const { user } = useAuthStore();
+
+    // Mock data for now - will be replaced with real API calls
+    const upcomingEvents = [
+        {
+            id: '1',
+            title: 'Perú vs Brasil - Copa América 2026',
+            date: '17 Jun 2026',
+            time: '21:00',
+            venue: 'Estadio Nacional',
+            status: 'confirmed',
+        },
+    ];
+
+    const recentOrders = [
+        {
+            id: '1',
+            event: 'Perú vs Brasil',
+            date: '15 Ene 2026',
+            tickets: 2,
+            total: 550,
+            status: 'PAID',
+        },
+    ];
+
+    return (
+        <div className="space-y-6">
+            {/* Header */}
+            <div>
+                <h1 className="text-2xl font-bold">¡Hola, {user?.fullName?.split(' ')[0]}! 👋</h1>
+                <p className="text-base-content/60">Aquí están tus próximos eventos y compras</p>
+            </div>
+
+            {/* Quick Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="card bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/20">
+                    <div className="card-body p-4">
+                        <div className="flex items-center justify-between">
+                            <div className="p-3 rounded-xl bg-primary/20">
+                                <Ticket className="w-6 h-6 text-primary" />
+                            </div>
+                        </div>
+                        <div className="mt-2">
+                            <p className="text-2xl font-bold">2</p>
+                            <p className="text-sm text-base-content/60">Tickets activos</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="card bg-gradient-to-br from-success/20 to-success/5 border border-success/20">
+                    <div className="card-body p-4">
+                        <div className="flex items-center justify-between">
+                            <div className="p-3 rounded-xl bg-success/20">
+                                <Calendar className="w-6 h-6 text-success" />
+                            </div>
+                        </div>
+                        <div className="mt-2">
+                            <p className="text-2xl font-bold">1</p>
+                            <p className="text-sm text-base-content/60">Próximos eventos</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="card bg-gradient-to-br from-warning/20 to-warning/5 border border-warning/20">
+                    <div className="card-body p-4">
+                        <div className="flex items-center justify-between">
+                            <div className="p-3 rounded-xl bg-warning/20">
+                                <ShoppingCart className="w-6 h-6 text-warning" />
+                            </div>
+                        </div>
+                        <div className="mt-2">
+                            <p className="text-2xl font-bold">3</p>
+                            <p className="text-sm text-base-content/60">Compras realizadas</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Main Content Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Upcoming Events */}
+                <div className="card bg-base-200">
+                    <div className="card-body">
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="card-title">Próximos Eventos</h2>
+                            <Link href="/dashboard/my-events" className="btn btn-ghost btn-sm">
+                                Ver todos
+                            </Link>
+                        </div>
+
+                        {upcomingEvents.length > 0 ? (
+                            <div className="space-y-3">
+                                {upcomingEvents.map((event) => (
+                                    <div key={event.id} className="flex items-center gap-4 p-3 bg-base-300 rounded-lg">
+                                        <div className="p-3 rounded-lg bg-primary/20">
+                                            <Calendar className="w-6 h-6 text-primary" />
+                                        </div>
+                                        <div className="flex-1">
+                                            <p className="font-medium">{event.title}</p>
+                                            <p className="text-sm text-base-content/60">
+                                                {event.date} • {event.time} • {event.venue}
+                                            </p>
+                                        </div>
+                                        <span className="badge badge-success">Confirmado</span>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="text-center py-8">
+                                <Calendar className="w-12 h-12 mx-auto text-base-content/30 mb-3" />
+                                <p className="text-base-content/60">No tienes eventos próximos</p>
+                                <Link href="/events" className="btn btn-primary btn-sm mt-3">
+                                    Explorar eventos
+                                </Link>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Recent Orders */}
+                <div className="card bg-base-200">
+                    <div className="card-body">
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="card-title">Compras Recientes</h2>
+                            <Link href="/dashboard/my-orders" className="btn btn-ghost btn-sm">
+                                Ver todas
+                            </Link>
+                        </div>
+
+                        {recentOrders.length > 0 ? (
+                            <div className="space-y-3">
+                                {recentOrders.map((order) => (
+                                    <div key={order.id} className="flex items-center gap-4 p-3 bg-base-300 rounded-lg">
+                                        <div className="p-3 rounded-lg bg-success/20">
+                                            <ShoppingCart className="w-6 h-6 text-success" />
+                                        </div>
+                                        <div className="flex-1">
+                                            <p className="font-medium">{order.event}</p>
+                                            <p className="text-sm text-base-content/60">
+                                                {order.tickets} tickets • {order.date}
+                                            </p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="font-semibold">S/ {order.total}</p>
+                                            <span className="badge badge-success badge-sm">Pagado</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="text-center py-8">
+                                <ShoppingCart className="w-12 h-12 mx-auto text-base-content/30 mb-3" />
+                                <p className="text-base-content/60">No tienes compras aún</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="space-y-4">
+                <h2 className="text-xl font-bold">Acciones Rápidas</h2>
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <Link
+                        href="/events"
+                        className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-base-200 to-base-300 border border-base-300 p-4 hover:border-primary/50 transition-all duration-300"
+                    >
+                        <div className="flex flex-col items-center text-center gap-2">
+                            <div className="p-3 rounded-lg bg-primary/20">
+                                <Calendar className="w-6 h-6 text-primary" />
+                            </div>
+                            <p className="font-semibold group-hover:text-primary transition-colors">Explorar Eventos</p>
+                        </div>
+                    </Link>
+
+                    <Link
+                        href="/dashboard/my-tickets"
+                        className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-base-200 to-base-300 border border-base-300 p-4 hover:border-success/50 transition-all duration-300"
+                    >
+                        <div className="flex flex-col items-center text-center gap-2">
+                            <div className="p-3 rounded-lg bg-success/20">
+                                <Ticket className="w-6 h-6 text-success" />
+                            </div>
+                            <p className="font-semibold group-hover:text-success transition-colors">Mis Tickets</p>
+                        </div>
+                    </Link>
+
+                    <Link
+                        href="/dashboard/my-orders"
+                        className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-base-200 to-base-300 border border-base-300 p-4 hover:border-warning/50 transition-all duration-300"
+                    >
+                        <div className="flex flex-col items-center text-center gap-2">
+                            <div className="p-3 rounded-lg bg-warning/20">
+                                <ShoppingCart className="w-6 h-6 text-warning" />
+                            </div>
+                            <p className="font-semibold group-hover:text-warning transition-colors">Mis Compras</p>
+                        </div>
+                    </Link>
+
+                    <Link
+                        href="/dashboard/profile"
+                        className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-base-200 to-base-300 border border-base-300 p-4 hover:border-info/50 transition-all duration-300"
+                    >
+                        <div className="flex flex-col items-center text-center gap-2">
+                            <div className="p-3 rounded-lg bg-info/20">
+                                <Users className="w-6 h-6 text-info" />
+                            </div>
+                            <p className="font-semibold group-hover:text-info transition-colors">Mi Perfil</p>
+                        </div>
+                    </Link>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 // Main Dashboard Page - Routes based on role
 export default function DashboardPage() {
     const { user } = useAuthStore();
@@ -443,6 +662,11 @@ export default function DashboardPage() {
         return <AdminDashboard />;
     }
 
-    // Show Organizer Dashboard for everyone else
-    return <OrganizerDashboard />;
+    // Show Organizer Dashboard for ORGANIZER role
+    if (user?.role === 'ORGANIZER') {
+        return <OrganizerDashboard />;
+    }
+
+    // Show Client Dashboard for CLIENT role (default)
+    return <ClientDashboard />;
 }
