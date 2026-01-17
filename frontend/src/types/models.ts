@@ -13,8 +13,10 @@ export interface Event {
     status: EventStatus;
     createdAt: string;
     images?: EventImages;
-    metadata?: Record<string, unknown>;
-    venueName?: string;   // Joined from venue
+    media?: EventMedia;   // Multimedia: gallery, videos, audio
+    metadata?: EventMetadata;
+    venue?: VenueInfo;    // Joined venue data
+    venueName?: string;   // Alias for frontend compatibility
     thumbnailUrl?: string; // Extracted from images
 }
 
@@ -34,10 +36,41 @@ export type EventStatus = 'DRAFT' | 'PUBLISHED' | 'CANCELLED' | 'COMPLETED';
 export interface EventImages {
     banner?: ImageInfo;
     thumbnail?: ImageInfo;
+    gallery?: ImageInfo[];
+}
+
+export interface EventMedia {
+    images?: {
+        banner?: ImageInfo;
+        thumbnail?: ImageInfo;
+        gallery?: ImageInfo[];
+    };
+    videos?: {
+        trailer?: { videoId: string; platform?: 'youtube' };
+    };
+    audio?: {
+        playlist?: { playlistId: string; platform?: 'spotify' };
+    };
+}
+
+export interface EventMetadata {
+    ageRestriction?: string;
+    policies?: string[];
+    includes?: string[];
+    additionalInfo?: string;
+    [key: string]: unknown;
+}
+
+export interface VenueInfo {
+    id: string;
+    name: string;
+    address?: string;
+    sectionsCount?: number;
 }
 
 export interface ImageInfo {
     url: string;
+    alt?: string;
     width?: number;
     height?: number;
     transformations?: Record<string, string>;

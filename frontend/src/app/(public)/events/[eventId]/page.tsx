@@ -1,11 +1,14 @@
 'use client';
 
 import { useParams } from 'next/navigation';
-import Image from 'next/image';
 import Link from 'next/link';
-import { Calendar, MapPin, Clock, Users, ArrowLeft, Ticket } from 'lucide-react';
+import { ArrowLeft, Share2, Heart } from 'lucide-react';
 import { useEvent } from '@/hooks/useEvents';
-import { formatDate } from '@/lib/utils';
+import EventHero from '@/components/events/EventHero';
+import EventGallery from '@/components/events/EventGallery';
+import EventMedia from '@/components/events/EventMedia';
+import EventPricing from '@/components/events/EventPricing';
+import EventInfo from '@/components/events/EventInfo';
 
 export default function EventDetailPage() {
     const params = useParams();
@@ -14,11 +17,22 @@ export default function EventDetailPage() {
 
     if (isLoading) {
         return (
-            <div className="container mx-auto px-4 py-8">
-                <div className="skeleton h-64 w-full rounded-2xl mb-8" />
-                <div className="skeleton h-10 w-1/2 mb-4" />
-                <div className="skeleton h-6 w-3/4 mb-2" />
-                <div className="skeleton h-6 w-2/3" />
+            <div className="min-h-screen">
+                {/* Hero Skeleton */}
+                <div className="skeleton h-[400px] md:h-[500px] w-full" />
+
+                {/* Content Skeleton */}
+                <div className="container mx-auto px-4 py-8">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <div className="lg:col-span-2 space-y-4">
+                            <div className="skeleton h-8 w-3/4" />
+                            <div className="skeleton h-4 w-full" />
+                            <div className="skeleton h-4 w-2/3" />
+                            <div className="skeleton h-32 w-full rounded-xl mt-6" />
+                        </div>
+                        <div className="skeleton h-64 rounded-xl" />
+                    </div>
+                </div>
             </div>
         );
     }
@@ -26,127 +40,152 @@ export default function EventDetailPage() {
     if (error || !event) {
         return (
             <div className="container mx-auto px-4 py-16 text-center">
-                <div className="text-6xl mb-4">😕</div>
-                <h2 className="text-2xl font-bold mb-2">Evento no encontrado</h2>
-                <p className="text-base-content/60 mb-6">
-                    El evento que buscas no existe o ha sido eliminado.
+                <div className="text-8xl mb-6">🎫</div>
+                <h2 className="text-3xl font-bold mb-3">Evento no encontrado</h2>
+                <p className="text-base-content/60 mb-8 max-w-md mx-auto">
+                    El evento que buscas no existe, ha sido eliminado o aún no está disponible.
                 </p>
-                <Link href="/events" className="btn btn-primary">
-                    <ArrowLeft className="w-4 h-4" />
+                <Link href="/events" className="btn btn-primary btn-lg">
+                    <ArrowLeft className="w-5 h-5" />
                     Ver todos los eventos
                 </Link>
             </div>
         );
     }
 
+    // Extract media from event (metadata or direct properties)
+    const media = event.media || {};
+    const galleryImages = media.images?.gallery || [];
+    const youtubeVideoId = media.videos?.trailer?.videoId;
+    const spotifyPlaylistId = media.audio?.playlist?.playlistId;
+
+    // Extract additional info from metadata
+    const metadata = event.metadata || {};
+    const ageRestriction = metadata.ageRestriction;
+    const policies = metadata.policies || [];
+    const includes = metadata.includes || [];
+    const additionalInfo = metadata.additionalInfo;
+
+    // Mock price range (in real app, this would come from ticket tiers)
+    const priceRange = {
+        min: 50,
+        max: 250,
+        currency: 'PEN',
+    };
+
     return (
-        <div className="container mx-auto px-4 py-8">
-            {/* Back Button */}
-            <Link href="/events" className="btn btn-ghost btn-sm mb-6">
-                <ArrowLeft className="w-4 h-4" />
-                Volver a eventos
-            </Link>
+        <div className="min-h-screen">
+            {/* Navigation Bar (floating) */}
+            <div className="fixed top-0 left-0 right-0 z-40 bg-gradient-to-b from-base-100/90 to-transparent pointer-events-none">
+                <div className="container mx-auto px-4 py-4 flex items-center justify-between pointer-events-auto">
+                    <Link href="/events" className="btn btn-ghost btn-sm gap-2 bg-base-200/80 backdrop-blur-sm">
+                        <ArrowLeft className="w-4 h-4" />
+                        Eventos
+                    </Link>
 
-            {/* Hero Banner */}
-            <div className="relative h-64 md:h-96 rounded-2xl overflow-hidden mb-8">
-                {event.images?.banner?.url ? (
-                    <Image
-                        src={event.images.banner.url}
-                        alt={event.title}
-                        fill
-                        className="object-cover"
-                    />
-                ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-primary/30 to-secondary/30 flex items-center justify-center">
-                        <Ticket className="w-24 h-24 text-primary/50" />
-                    </div>
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-base-100 to-transparent" />
-
-                {/* Status Badge */}
-                <div className="absolute top-4 right-4">
-                    <span className={`badge badge-lg ${event.status === 'PUBLISHED' ? 'badge-success' :
-                            event.status === 'DRAFT' ? 'badge-warning' : 'badge-error'
-                        }`}>
-                        {event.status === 'PUBLISHED' ? '✓ Disponible' : event.status}
-                    </span>
-                </div>
-            </div>
-
-            {/* Content Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Main Content */}
-                <div className="lg:col-span-2">
-                    <h1 className="text-3xl md:text-4xl font-bold mb-4">{event.title}</h1>
-
-                    <div className="prose prose-invert max-w-none mb-8">
-                        <p className="text-base-content/70 text-lg">
-                            {event.description || 'Sin descripción disponible'}
-                        </p>
-                    </div>
-
-                    {/* Event Info Cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-                        <div className="card bg-base-200">
-                            <div className="card-body p-4">
-                                <div className="flex items-center gap-3">
-                                    <div className="bg-primary/20 p-3 rounded-xl">
-                                        <Calendar className="w-6 h-6 text-primary" />
-                                    </div>
-                                    <div>
-                                        <p className="text-sm text-base-content/60">Fecha</p>
-                                        <p className="font-semibold">{formatDate(event.startTime)}</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="card bg-base-200">
-                            <div className="card-body p-4">
-                                <div className="flex items-center gap-3">
-                                    <div className="bg-secondary/20 p-3 rounded-xl">
-                                        <Clock className="w-6 h-6 text-secondary" />
-                                    </div>
-                                    <div>
-                                        <p className="text-sm text-base-content/60">Duración</p>
-                                        <p className="font-semibold">
-                                            {event.endTime ? `Hasta ${formatDate(event.endTime)}` : 'Por confirmar'}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Sidebar - Purchase Card */}
-                <div className="lg:col-span-1">
-                    <div className="card bg-base-200 sticky top-24">
-                        <div className="card-body">
-                            <h3 className="card-title text-xl">Comprar entradas</h3>
-
-                            <div className="divider my-2" />
-
-                            <p className="text-base-content/60 mb-4">
-                                Selecciona tus asientos y asegura tu lugar en este evento.
-                            </p>
-
-                            <Link
-                                href={`/events/${event.id}/seat-map`}
-                                className="btn btn-primary btn-lg w-full"
-                            >
-                                <Ticket className="w-5 h-5" />
-                                Seleccionar asientos
-                            </Link>
-
-                            <div className="mt-4 text-sm text-base-content/50 text-center">
-                                <p>🔒 Compra 100% segura</p>
-                                <p>⏱️ Reserva garantizada por 10 min</p>
-                            </div>
-                        </div>
+                    <div className="flex gap-2">
+                        <button className="btn btn-ghost btn-sm btn-circle bg-base-200/80 backdrop-blur-sm">
+                            <Heart className="w-4 h-4" />
+                        </button>
+                        <button className="btn btn-ghost btn-sm btn-circle bg-base-200/80 backdrop-blur-sm">
+                            <Share2 className="w-4 h-4" />
+                        </button>
                     </div>
                 </div>
             </div>
+
+            {/* Hero Section */}
+            <EventHero
+                title={event.title}
+                bannerUrl={event.images?.banner?.url}
+                startTime={event.startTime}
+                endTime={event.endTime}
+                venueName={event.venue?.name}
+                venueAddress={event.venue?.address}
+                status={event.status}
+            />
+
+            {/* Main Content */}
+            <div className="container mx-auto px-4 py-8">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    {/* Left Column - Main Content */}
+                    <div className="lg:col-span-2 space-y-8">
+                        {/* Event Info */}
+                        <EventInfo
+                            description={event.description}
+                            ageRestriction={ageRestriction}
+                            policies={policies}
+                            includes={includes}
+                            additionalInfo={additionalInfo}
+                        />
+
+                        {/* Gallery */}
+                        {galleryImages.length > 0 && (
+                            <EventGallery
+                                images={galleryImages}
+                                eventTitle={event.title}
+                            />
+                        )}
+
+                        {/* Multimedia */}
+                        <EventMedia
+                            youtubeVideoId={youtubeVideoId}
+                            spotifyPlaylistId={spotifyPlaylistId}
+                            title={event.title}
+                        />
+
+                        {/* Venue Map Placeholder */}
+                        {event.venue && (
+                            <section className="py-8">
+                                <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                                    📍 Ubicación
+                                </h2>
+                                <div className="card bg-base-200">
+                                    <div className="card-body">
+                                        <h3 className="card-title">{event.venue.name}</h3>
+                                        {event.venue.address && (
+                                            <p className="text-base-content/70">{event.venue.address}</p>
+                                        )}
+                                        {/* Map placeholder */}
+                                        <div className="aspect-video bg-base-300 rounded-xl mt-4 flex items-center justify-center">
+                                            <span className="text-base-content/40">Mapa próximamente</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
+                        )}
+                    </div>
+
+                    {/* Right Column - Pricing Card */}
+                    <div className="lg:col-span-1">
+                        <EventPricing
+                            eventId={event.id}
+                            status={event.status}
+                            priceRange={priceRange}
+                            sectionsCount={event.venue?.sectionsCount || 0}
+                        />
+                    </div>
+                </div>
+            </div>
+
+            {/* Mobile Fixed CTA */}
+            <div className="lg:hidden fixed bottom-0 left-0 right-0 p-4 bg-base-100 border-t border-base-300 z-40">
+                <div className="flex items-center justify-between gap-4">
+                    <div>
+                        <p className="text-sm text-base-content/60">Desde</p>
+                        <p className="text-xl font-bold text-primary">S/ {priceRange.min}</p>
+                    </div>
+                    <Link
+                        href={`/events/${event.id}/seat-map`}
+                        className="btn btn-primary flex-1"
+                    >
+                        Comprar Entradas
+                    </Link>
+                </div>
+            </div>
+
+            {/* Bottom Padding for Mobile CTA */}
+            <div className="lg:hidden h-24" />
         </div>
     );
 }
