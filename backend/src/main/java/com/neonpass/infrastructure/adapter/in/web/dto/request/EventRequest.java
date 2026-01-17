@@ -38,4 +38,10 @@ public class EventRequest {
 
     @Builder.Default
     private EventStatus status = EventStatus.DRAFT;
+
+    /**
+     * Metadata adicional en formato JSON.
+     * Puede contener: media (images, videos, audio), políticas, restricciones, etc.
+     */
+    private String metadata;
 }
