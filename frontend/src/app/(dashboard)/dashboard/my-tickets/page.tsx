@@ -2,49 +2,28 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Ticket, Download, QrCode, Calendar, MapPin, Clock, Search } from 'lucide-react';
-
-// Mock data - will be replaced with real API
-const mockTickets = [
-    {
-        id: '1',
-        eventTitle: 'Perú vs Brasil - Copa América 2026',
-        eventDate: '2026-06-17T21:00:00',
-        venue: 'Estadio Nacional',
-        section: 'Tribuna Norte',
-        row: 'F',
-        seat: '15',
-        price: 275,
-        status: 'ACTIVE',
-        qrToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
-    },
-    {
-        id: '2',
-        eventTitle: 'Perú vs Brasil - Copa América 2026',
-        eventDate: '2026-06-17T21:00:00',
-        venue: 'Estadio Nacional',
-        section: 'Tribuna Norte',
-        row: 'F',
-        seat: '16',
-        price: 275,
-        status: 'ACTIVE',
-        qrToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
-    },
-];
+import { ArrowLeft, Ticket, Download, QrCode, Calendar, MapPin, Clock, Search, Loader2 } from 'lucide-react';
+import { useMyTickets, useDownloadTicket, MyTicket } from '@/hooks/useTickets';
 
 export default function MyTicketsPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [filter, setFilter] = useState<'all' | 'active' | 'used'>('all');
+    const [showQrModal, setShowQrModal] = useState(false);
+    const [selectedTicket, setSelectedTicket] = useState<MyTicket | null>(null);
 
-    const filteredTickets = mockTickets.filter((ticket) => {
-        const matchesSearch = ticket.eventTitle.toLowerCase().includes(searchTerm.toLowerCase());
+    const { data: tickets = [], isLoading, error } = useMyTickets();
+    const downloadMutation = useDownloadTicket();
+
+    const filteredTickets = tickets.filter((ticket) => {
+        const matchesSearch = ticket.eventTitle?.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesFilter = filter === 'all' ||
-            (filter === 'active' && ticket.status === 'ACTIVE') ||
+            (filter === 'active' && ticket.status === 'VALID') ||
             (filter === 'used' && ticket.status === 'USED');
         return matchesSearch && matchesFilter;
     });
 
     const formatDate = (dateStr: string) => {
+        if (!dateStr) return '';
         const date = new Date(dateStr);
         return date.toLocaleDateString('es-PE', {
             weekday: 'long',
@@ -55,9 +34,47 @@ export default function MyTicketsPage() {
     };
 
     const formatTime = (dateStr: string) => {
+        if (!dateStr) return '';
         const date = new Date(dateStr);
         return date.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
     };
+
+    const handleDownload = async (ticket: MyTicket) => {
+        try {
+            await downloadMutation.mutateAsync({
+                ticketId: ticket.id,
+                filename: `ticket_${ticket.eventTitle?.replace(/\s+/g, '_')}_${ticket.id.substring(0, 8)}.pdf`
+            });
+        } catch (error) {
+            console.error('Error downloading ticket:', error);
+        }
+    };
+
+    const handleShowQr = (ticket: MyTicket) => {
+        setSelectedTicket(ticket);
+        setShowQrModal(true);
+    };
+
+    if (isLoading) {
+        return (
+            <div className="flex items-center justify-center min-h-[400px]">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="card bg-base-200">
+                <div className="card-body items-center text-center py-12">
+                    <p className="text-error">Error al cargar los tickets</p>
+                    <Link href="/dashboard" className="btn btn-primary mt-4">
+                        Volver al dashboard
+                    </Link>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">
@@ -94,19 +111,19 @@ export default function MyTicketsPage() {
                         className={`tab ${filter === 'all' ? 'tab-active' : ''}`}
                         onClick={() => setFilter('all')}
                     >
-                        Todos
+                        Todos ({tickets.length})
                     </button>
                     <button
                         className={`tab ${filter === 'active' ? 'tab-active' : ''}`}
                         onClick={() => setFilter('active')}
                     >
-                        Activos
+                        Activos ({tickets.filter(t => t.status === 'VALID').length})
                     </button>
                     <button
                         className={`tab ${filter === 'used' ? 'tab-active' : ''}`}
                         onClick={() => setFilter('used')}
                     >
-                        Usados
+                        Usados ({tickets.filter(t => t.status === 'USED').length})
                     </button>
                 </div>
             </div>
@@ -120,7 +137,7 @@ export default function MyTicketsPage() {
                                 {/* Event Info */}
                                 <div className="flex items-start justify-between">
                                     <div>
-                                        <h3 className="font-bold text-lg">{ticket.eventTitle}</h3>
+                                        <h3 className="font-bold text-lg">{ticket.eventTitle || 'Evento'}</h3>
                                         <div className="mt-2 space-y-1 text-sm text-base-content/70">
                                             <p className="flex items-center gap-2">
                                                 <Calendar className="w-4 h-4" />
@@ -132,12 +149,12 @@ export default function MyTicketsPage() {
                                             </p>
                                             <p className="flex items-center gap-2">
                                                 <MapPin className="w-4 h-4" />
-                                                {ticket.venue}
+                                                {ticket.venueName || 'Venue'}
                                             </p>
                                         </div>
                                     </div>
-                                    <span className={`badge ${ticket.status === 'ACTIVE' ? 'badge-success' : 'badge-ghost'}`}>
-                                        {ticket.status === 'ACTIVE' ? 'Activo' : 'Usado'}
+                                    <span className={`badge ${ticket.status === 'VALID' ? 'badge-success' : ticket.status === 'USED' ? 'badge-ghost' : 'badge-error'}`}>
+                                        {ticket.status === 'VALID' ? 'Activo' : ticket.status === 'USED' ? 'Usado' : 'Cancelado'}
                                     </span>
                                 </div>
 
@@ -147,31 +164,42 @@ export default function MyTicketsPage() {
                                     <div className="flex gap-4">
                                         <div className="text-center">
                                             <p className="text-xs text-base-content/50">Sección</p>
-                                            <p className="font-bold">{ticket.section}</p>
+                                            <p className="font-bold">{ticket.sectionName || ticket.tierName || 'GA'}</p>
                                         </div>
                                         <div className="text-center">
                                             <p className="text-xs text-base-content/50">Fila</p>
-                                            <p className="font-bold">{ticket.row}</p>
+                                            <p className="font-bold">{ticket.row || '-'}</p>
                                         </div>
                                         <div className="text-center">
                                             <p className="text-xs text-base-content/50">Asiento</p>
-                                            <p className="font-bold">{ticket.seat}</p>
+                                            <p className="font-bold">{ticket.seatNumber || 'GA'}</p>
                                         </div>
                                     </div>
                                     <div className="text-right">
                                         <p className="text-xs text-base-content/50">Precio</p>
-                                        <p className="font-bold text-lg">S/ {ticket.price}</p>
+                                        <p className="font-bold text-lg">{ticket.currency} {ticket.price}</p>
                                     </div>
                                 </div>
 
                                 {/* Actions */}
                                 <div className="card-actions justify-end mt-4">
-                                    <button className="btn btn-ghost btn-sm gap-2">
+                                    <button
+                                        className="btn btn-ghost btn-sm gap-2"
+                                        onClick={() => handleShowQr(ticket)}
+                                    >
                                         <QrCode className="w-4 h-4" />
                                         Ver QR
                                     </button>
-                                    <button className="btn btn-primary btn-sm gap-2">
-                                        <Download className="w-4 h-4" />
+                                    <button
+                                        className="btn btn-primary btn-sm gap-2"
+                                        onClick={() => handleDownload(ticket)}
+                                        disabled={downloadMutation.isPending}
+                                    >
+                                        {downloadMutation.isPending ? (
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                        ) : (
+                                            <Download className="w-4 h-4" />
+                                        )}
                                         Descargar PDF
                                     </button>
                                 </div>
@@ -192,6 +220,47 @@ export default function MyTicketsPage() {
                         </Link>
                     </div>
                 </div>
+            )}
+
+            {/* QR Modal */}
+            {showQrModal && selectedTicket && (
+                <dialog className="modal modal-open">
+                    <div className="modal-box text-center">
+                        <h3 className="font-bold text-lg mb-4">Código QR del Ticket</h3>
+                        <p className="text-sm text-base-content/60 mb-4">{selectedTicket.eventTitle}</p>
+
+                        {/* QR Code placeholder - The actual QR would need a QR library */}
+                        <div className="bg-white p-4 rounded-lg inline-block mb-4">
+                            <div className="w-48 h-48 bg-base-200 flex items-center justify-center rounded">
+                                <QrCode className="w-32 h-32 text-base-content/30" />
+                            </div>
+                        </div>
+
+                        <p className="text-xs text-base-content/50 mb-4">
+                            Presenta este código en la entrada del evento
+                        </p>
+
+                        <p className="text-xs font-mono text-base-content/40 break-all mb-4">
+                            {selectedTicket.qrCodeHash?.substring(0, 40)}...
+                        </p>
+
+                        <div className="modal-action justify-center">
+                            <button
+                                className="btn btn-primary gap-2"
+                                onClick={() => handleDownload(selectedTicket)}
+                            >
+                                <Download className="w-4 h-4" />
+                                Descargar PDF
+                            </button>
+                            <button className="btn" onClick={() => setShowQrModal(false)}>
+                                Cerrar
+                            </button>
+                        </div>
+                    </div>
+                    <form method="dialog" className="modal-backdrop">
+                        <button onClick={() => setShowQrModal(false)}>close</button>
+                    </form>
+                </dialog>
             )}
         </div>
     );

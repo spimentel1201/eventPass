@@ -3,6 +3,7 @@
 import { useAuthStore } from '@/stores/authStore';
 import { useAdminDashboard } from '@/hooks/useAdmin';
 import { useEvents } from '@/hooks/useEvents';
+import { useMyTickets } from '@/hooks/useTickets';
 import Link from 'next/link';
 import {
     Calendar,

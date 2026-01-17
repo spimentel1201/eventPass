@@ -31,6 +31,12 @@ export const API_ROUTES = {
     MY_ORDERS: '/orders',
     ORDER: (id: string) => `/orders/${id}`,
 
+    // Tickets
+    MY_TICKETS: '/tickets/my-tickets',
+    TICKET: (id: string) => `/tickets/${id}`,
+    TICKET_DOWNLOAD: (id: string) => `/tickets/${id}/download`,
+    TICKET_VALIDATE: '/tickets/validate',
+
     // Admin
     ADMIN_DASHBOARD: '/admin/dashboard',
     ADMIN_USERS: '/admin/users',
