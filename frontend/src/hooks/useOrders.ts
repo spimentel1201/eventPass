@@ -6,13 +6,15 @@ import { API_ROUTES } from '@/lib/constants';
 import { useCartStore } from '@/stores/cartStore';
 import type { Order } from '@/types';
 
+// Request for section-based purchase
 interface CreateOrderRequest {
     eventId: string;
     items: {
-        ticketTierId: string;
-        seatId: string;
+        sectionId: string;
         quantity: number;
+        pricePerTicket: number;
     }[];
+    totalAmount: number;
 }
 
 interface ApiResponse<T> {
@@ -22,21 +24,22 @@ interface ApiResponse<T> {
 }
 
 export function useCreateOrder() {
-    const { selectedSeats, eventId, clearCart } = useCartStore();
+    const { items, eventId, totalAmount, clearCart } = useCartStore();
 
     const mutation = useMutation({
         mutationFn: async () => {
-            if (!eventId || selectedSeats.length === 0) {
-                throw new Error('No hay asientos seleccionados');
+            if (!eventId || items.length === 0) {
+                throw new Error('No hay entradas seleccionadas');
             }
 
             const request: CreateOrderRequest = {
                 eventId,
-                items: selectedSeats.map((seat) => ({
-                    ticketTierId: seat.ticketTierId,
-                    seatId: seat.id,
-                    quantity: 1,
+                items: items.map((item) => ({
+                    sectionId: item.sectionId,
+                    quantity: item.quantity,
+                    pricePerTicket: item.pricePerTicket,
                 })),
+                totalAmount: totalAmount(),
             };
 
             const response = await api.post<ApiResponse<Order>>(

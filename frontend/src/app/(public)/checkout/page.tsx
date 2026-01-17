@@ -10,23 +10,25 @@ import {
     CheckCircle,
     Loader2,
     AlertCircle,
+    Trash2,
 } from 'lucide-react';
 import { useCartStore } from '@/stores/cartStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useCreateOrder } from '@/hooks/useOrders';
-import { CartSummary } from '@/components/features/checkout/CartSummary';
 import { ReservationTimer } from '@/components/features/checkout/ReservationTimer';
 
 export default function CheckoutPage() {
     const router = useRouter();
     const { isAuthenticated, user } = useAuthStore();
     const {
-        selectedSeats,
+        items,
         totalAmount,
+        totalQuantity,
         clearCart,
-        removeSeat,
+        removeItem,
         reservationExpiry,
         eventId,
+        eventTitle,
     } = useCartStore();
 
     const { createOrder, isLoading, error, isSuccess, order } = useCreateOrder();
@@ -49,13 +51,13 @@ export default function CheckoutPage() {
     }
 
     // Empty cart
-    if (selectedSeats.length === 0 && !isSuccess) {
+    if (items.length === 0 && !isSuccess) {
         return (
             <div className="container mx-auto px-4 py-16 text-center">
                 <AlertCircle className="w-16 h-16 mx-auto text-error mb-4" />
                 <h2 className="text-2xl font-bold mb-2">Tu carrito está vacío</h2>
                 <p className="text-base-content/60 mb-6">
-                    Selecciona algunos asientos para continuar
+                    Selecciona entradas para continuar
                 </p>
                 <Link href="/events" className="btn btn-primary">
                     Ver eventos
@@ -83,10 +85,7 @@ export default function CheckoutPage() {
                             Recibirás un correo con los detalles de tu compra y tus tickets.
                         </p>
                         <div className="flex flex-col gap-2">
-                            <Link href="/orders" className="btn btn-primary">
-                                Ver mis órdenes
-                            </Link>
-                            <Link href="/events" className="btn btn-ghost">
+                            <Link href="/events" className="btn btn-primary">
                                 Buscar más eventos
                             </Link>
                         </div>
@@ -106,7 +105,9 @@ export default function CheckoutPage() {
         createOrder();
     };
 
-    const total = totalAmount() * 1.1; // Including service fee
+    const subtotal = totalAmount();
+    const serviceFee = subtotal * 0.10;
+    const total = subtotal + serviceFee;
 
     return (
         <div className="container mx-auto px-4 py-8">
@@ -120,12 +121,11 @@ export default function CheckoutPage() {
                     <div>
                         <h1 className="text-2xl font-bold">Checkout</h1>
                         <p className="text-base-content/60 text-sm">
-                            Confirma tu compra
+                            {eventTitle || 'Confirma tu compra'}
                         </p>
                     </div>
                 </div>
 
-                {/* Timer */}
                 {reservationExpiry && (
                     <ReservationTimer
                         expiryTime={reservationExpiry}
@@ -144,16 +144,66 @@ export default function CheckoutPage() {
 
             {/* Main Content */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Left: Summary */}
+                {/* Left: Order Summary */}
                 <div className="lg:col-span-2 space-y-6">
-                    {/* Cart Summary */}
-                    <CartSummary
-                        seats={selectedSeats}
-                        totalAmount={totalAmount()}
-                        onRemoveSeat={removeSeat}
-                        onClearAll={clearCart}
-                        isLoading={isLoading}
-                    />
+                    {/* Items */}
+                    <div className="card bg-base-200">
+                        <div className="card-body">
+                            <div className="flex justify-between items-center">
+                                <h3 className="card-title text-lg">Tu Selección</h3>
+                                <button
+                                    className="btn btn-ghost btn-xs text-error"
+                                    onClick={clearCart}
+                                    disabled={isLoading}
+                                >
+                                    Limpiar todo
+                                </button>
+                            </div>
+
+                            <div className="overflow-x-auto">
+                                <table className="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Zona</th>
+                                            <th className="text-center">Cantidad</th>
+                                            <th className="text-right">Precio</th>
+                                            <th className="text-right">Subtotal</th>
+                                            <th></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {items.map(item => (
+                                            <tr key={item.id}>
+                                                <td>
+                                                    <div className="flex items-center gap-2">
+                                                        <div
+                                                            className="w-3 h-3 rounded-full"
+                                                            style={{ backgroundColor: item.color || '#3b82f6' }}
+                                                        />
+                                                        <span className="font-medium">{item.sectionName}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="text-center">{item.quantity}</td>
+                                                <td className="text-right">S/ {item.pricePerTicket.toFixed(2)}</td>
+                                                <td className="text-right font-medium">
+                                                    S/ {(item.quantity * item.pricePerTicket).toFixed(2)}
+                                                </td>
+                                                <td className="text-right">
+                                                    <button
+                                                        className="btn btn-ghost btn-xs btn-circle text-error"
+                                                        onClick={() => removeItem(item.sectionId)}
+                                                        disabled={isLoading}
+                                                    >
+                                                        <Trash2 className="w-3 h-3" />
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
 
                     {/* User Info */}
                     <div className="card bg-base-200">
@@ -175,6 +225,29 @@ export default function CheckoutPage() {
 
                 {/* Right: Payment */}
                 <div className="space-y-4">
+                    {/* Payment Summary */}
+                    <div className="card bg-base-200">
+                        <div className="card-body">
+                            <h3 className="card-title text-lg">Resumen</h3>
+
+                            <div className="space-y-2 mt-4">
+                                <div className="flex justify-between">
+                                    <span className="text-base-content/60">Entradas ({totalQuantity()})</span>
+                                    <span>S/ {subtotal.toFixed(2)}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-base-content/60">Cargo por servicio (10%)</span>
+                                    <span>S/ {serviceFee.toFixed(2)}</span>
+                                </div>
+                                <div className="divider my-2" />
+                                <div className="flex justify-between text-lg font-bold">
+                                    <span>Total</span>
+                                    <span className="text-primary">S/ {total.toFixed(2)}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     {/* Payment Card */}
                     <div className="card bg-base-200">
                         <div className="card-body">
@@ -223,7 +296,7 @@ export default function CheckoutPage() {
                                 ) : (
                                     <>
                                         <CreditCard className="w-5 h-5" />
-                                        Confirmar compra
+                                        Pagar S/ {total.toFixed(2)}
                                     </>
                                 )}
                             </button>
@@ -236,16 +309,6 @@ export default function CheckoutPage() {
                                 </div>
                             </div>
                         </div>
-                    </div>
-
-                    {/* Info */}
-                    <div className="bg-base-200 rounded-xl p-4">
-                        <h4 className="font-semibold mb-2">📋 Información</h4>
-                        <ul className="text-sm text-base-content/70 space-y-1">
-                            <li>• Los tickets se enviarán a tu email</li>
-                            <li>• Puedes ver tus órdenes en "Mis órdenes"</li>
-                            <li>• Cancelaciones hasta 48h antes del evento</li>
-                        </ul>
                     </div>
                 </div>
             </div>
