@@ -24,10 +24,14 @@ interface ApiResponse<T> {
 }
 
 export function useCreateOrder() {
-    const { items, eventId, totalAmount, clearCart } = useCartStore();
-
     const mutation = useMutation({
         mutationFn: async () => {
+            // Get current state at execution time, not at hook creation time
+            const state = useCartStore.getState();
+            const { items, eventId, totalAmount, clearCart } = state;
+
+            console.log('Creating order with:', { eventId, itemsCount: items.length });
+
             if (!eventId || items.length === 0) {
                 throw new Error('No hay entradas seleccionadas');
             }
@@ -42,6 +46,8 @@ export function useCreateOrder() {
                 totalAmount: totalAmount(),
             };
 
+            console.log('Order request:', request);
+
             const response = await api.post<ApiResponse<Order>>(
                 API_ROUTES.CHECKOUT,
                 request
@@ -49,7 +55,7 @@ export function useCreateOrder() {
             return response.data.data;
         },
         onSuccess: () => {
-            clearCart();
+            useCartStore.getState().clearCart();
         },
     });
 

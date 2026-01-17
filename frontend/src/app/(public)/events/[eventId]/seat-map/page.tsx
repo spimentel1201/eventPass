@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, AlertCircle, ShoppingCart, Plus, Minus, Ticket } from 'lucide-react';
+import { ArrowLeft, AlertCircle, ShoppingCart, Plus, Minus, Ticket, Trash2 } from 'lucide-react';
 import { useSeatingMap } from '@/hooks/useSeatingMap';
 import { useCartStore } from '@/stores/cartStore';
 import { ReservationTimer } from '@/components/features/checkout/ReservationTimer';
@@ -17,12 +17,12 @@ export default function SeatMapPage() {
     const { data: seatingMap, isLoading, error } = useSeatingMap(eventId);
     const { items, addItem, updateItemQuantity, removeItem, clearCart, totalAmount, totalQuantity, reservationExpiry, setEvent } = useCartStore();
 
-    // Set event when page loads
-    useState(() => {
-        if (seatingMap) {
-            setEvent(eventId, seatingMap.venueName || 'Evento');
+    // Set event when page loads - CRITICAL: This must run to set eventId in cart
+    useEffect(() => {
+        if (eventId) {
+            setEvent(eventId, seatingMap?.venueName || 'Evento');
         }
-    });
+    }, [eventId, seatingMap?.venueName, setEvent]);
 
     const handleTimerExpire = () => {
         clearCart();
@@ -154,24 +154,29 @@ export default function SeatMapPage() {
                             {items.length > 0 ? (
                                 <div className="space-y-3">
                                     {items.map(item => (
-                                        <div key={item.id} className="flex justify-between items-center">
-                                            <div>
-                                                <p className="font-medium">{item.sectionName}</p>
+                                        <div key={item.id} className="flex items-center gap-3 p-2 bg-base-300/50 rounded-lg">
+                                            <div
+                                                className="w-3 h-3 rounded-full flex-shrink-0"
+                                                style={{ backgroundColor: item.color || '#3b82f6' }}
+                                            />
+                                            <div className="flex-1 min-w-0">
+                                                <p className="font-medium truncate">{item.sectionName}</p>
                                                 <p className="text-sm text-base-content/60">
                                                     {item.quantity} × S/{item.pricePerTicket}
                                                 </p>
                                             </div>
-                                            <div className="text-right">
+                                            <div className="text-right flex-shrink-0">
                                                 <p className="font-bold">
                                                     S/ {(item.quantity * item.pricePerTicket).toFixed(2)}
                                                 </p>
-                                                <button
-                                                    className="text-xs text-error"
-                                                    onClick={() => removeItem(item.sectionId)}
-                                                >
-                                                    Eliminar
-                                                </button>
                                             </div>
+                                            <button
+                                                className="btn btn-ghost btn-sm btn-circle text-error hover:bg-error/20"
+                                                onClick={() => removeItem(item.sectionId)}
+                                                title="Eliminar"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
                                         </div>
                                     ))}
 
@@ -246,7 +251,12 @@ function SectionCard({
     const config = section.layoutConfig || {};
     const color = config.color || '#3b82f6';
     const price = config.basePrice || 50;
-    const available = section.availableCount ?? section.capacity ?? 0;
+    // Use capacity as base - if there are sold seats, subtract them
+    const rows = config.rows ?? 0;
+    const seatsPerRow = config.seatsPerRow ?? 0;
+    const capacity = section.capacity || (rows * seatsPerRow) || 100;
+    const soldCount = section.soldCount || 0;
+    const available = capacity - soldCount;
 
     const isInCart = quantity > 0;
 
@@ -279,26 +289,28 @@ function SectionCard({
 
                 <div className="mt-4">
                     {isInCart ? (
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
+                        <div className="flex items-center justify-between gap-4 bg-base-300/50 rounded-lg p-3">
+                            <div className="flex items-center gap-4">
                                 <button
-                                    className="btn btn-sm btn-circle btn-outline"
+                                    className="btn btn-sm btn-circle btn-ghost hover:bg-base-content/10"
                                     onClick={() => onQuantityChange(-1)}
                                 >
                                     <Minus className="w-4 h-4" />
                                 </button>
-                                <span className="text-lg font-bold w-8 text-center">{quantity}</span>
+                                <span className="text-xl font-bold min-w-[2rem] text-center">{quantity}</span>
                                 <button
-                                    className="btn btn-sm btn-circle btn-outline"
+                                    className="btn btn-sm btn-circle btn-ghost hover:bg-base-content/10"
                                     onClick={() => onQuantityChange(1)}
                                     disabled={quantity >= 10 || quantity >= available}
                                 >
                                     <Plus className="w-4 h-4" />
                                 </button>
                             </div>
-                            <p className="font-bold">
-                                S/ {(price * quantity).toFixed(2)}
-                            </p>
+                            <div className="text-right">
+                                <p className="text-xl font-bold" style={{ color }}>
+                                    S/ {(price * quantity).toFixed(2)}
+                                </p>
+                            </div>
                         </div>
                     ) : (
                         <button
