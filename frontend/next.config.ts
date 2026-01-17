@@ -2,15 +2,16 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   images: {
+    // Permitir imágenes de cualquier dominio
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'res.cloudinary.com',
+        hostname: '**',
         pathname: '/**',
       },
       {
-        protocol: 'https',
-        hostname: 'images.unsplash.com',
+        protocol: 'http',
+        hostname: '**',
         pathname: '/**',
       },
     ],
@@ -18,3 +19,4 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
+

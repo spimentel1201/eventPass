@@ -141,27 +141,69 @@ function AdminDashboard() {
                 </div>
 
                 {/* Quick Actions */}
-                <div className="card bg-base-200">
-                    <div className="card-body">
-                        <h2 className="card-title mb-4">Acciones de Admin</h2>
-                        <div className="grid grid-cols-2 gap-3">
-                            <Link href="/dashboard/admin/users" className="btn btn-outline btn-error justify-start gap-2">
-                                <Users className="w-5 h-5" />
-                                Usuarios
-                            </Link>
-                            <Link href="/dashboard/admin/orders" className="btn btn-outline btn-error justify-start gap-2">
-                                <ShoppingCart className="w-5 h-5" />
-                                Órdenes
-                            </Link>
-                            <Link href="/dashboard/events" className="btn btn-outline justify-start gap-2">
-                                <Calendar className="w-5 h-5" />
-                                Eventos
-                            </Link>
-                            <Link href="/dashboard/venues" className="btn btn-outline justify-start gap-2">
-                                <Building2 className="w-5 h-5" />
-                                Recintos
-                            </Link>
-                        </div>
+                <div className="space-y-4">
+                    <h2 className="text-xl font-bold">Acciones de Admin</h2>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <Link
+                            href="/dashboard/admin/users"
+                            className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-base-200 to-base-300 border border-base-300 p-4 hover:border-error/50 transition-all duration-300"
+                        >
+                            <div className="flex items-start gap-3">
+                                <div className="p-2 rounded-lg bg-error/20">
+                                    <Users className="w-5 h-5 text-error" />
+                                </div>
+                                <div>
+                                    <p className="font-semibold group-hover:text-error transition-colors">Usuarios</p>
+                                    <p className="text-xs text-base-content/50">Gestionar cuentas</p>
+                                </div>
+                            </div>
+                        </Link>
+
+                        <Link
+                            href="/dashboard/admin/orders"
+                            className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-base-200 to-base-300 border border-base-300 p-4 hover:border-warning/50 transition-all duration-300"
+                        >
+                            <div className="flex items-start gap-3">
+                                <div className="p-2 rounded-lg bg-warning/20">
+                                    <ShoppingCart className="w-5 h-5 text-warning" />
+                                </div>
+                                <div>
+                                    <p className="font-semibold group-hover:text-warning transition-colors">Órdenes</p>
+                                    <p className="text-xs text-base-content/50">Ver transacciones</p>
+                                </div>
+                            </div>
+                        </Link>
+
+                        <Link
+                            href="/dashboard/events"
+                            className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-base-200 to-base-300 border border-base-300 p-4 hover:border-primary/50 transition-all duration-300"
+                        >
+                            <div className="flex items-start gap-3">
+                                <div className="p-2 rounded-lg bg-primary/20">
+                                    <Calendar className="w-5 h-5 text-primary" />
+                                </div>
+                                <div>
+                                    <p className="font-semibold group-hover:text-primary transition-colors">Eventos</p>
+                                    <p className="text-xs text-base-content/50">Ver todos</p>
+                                </div>
+                            </div>
+                        </Link>
+
+                        <Link
+                            href="/dashboard/venues"
+                            className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-base-200 to-base-300 border border-base-300 p-4 hover:border-info/50 transition-all duration-300"
+                        >
+                            <div className="flex items-start gap-3">
+                                <div className="p-2 rounded-lg bg-info/20">
+                                    <Building2 className="w-5 h-5 text-info" />
+                                </div>
+                                <div>
+                                    <p className="font-semibold group-hover:text-info transition-colors">Recintos</p>
+                                    <p className="text-xs text-base-content/50">Ver venues</p>
+                                </div>
+                            </div>
+                        </Link>
                     </div>
                 </div>
             </div>
@@ -322,40 +364,69 @@ function OrganizerDashboard() {
                 </div>
 
                 {/* Quick Actions */}
-                <div className="card bg-base-200">
-                    <div className="card-body">
-                        <h2 className="card-title mb-4">Acciones Rápidas</h2>
+                <div className="space-y-4">
+                    <h2 className="text-xl font-bold">Acciones Rápidas</h2>
 
-                        <div className="grid grid-cols-2 gap-3">
-                            <Link
-                                href="/dashboard/events/new"
-                                className="btn btn-outline btn-primary justify-start gap-2"
-                            >
-                                <Calendar className="w-5 h-5" />
-                                Crear Evento
-                            </Link>
-                            <Link
-                                href="/dashboard/venues/new"
-                                className="btn btn-outline btn-secondary justify-start gap-2"
-                            >
-                                <Building2 className="w-5 h-5" />
-                                Nuevo Recinto
-                            </Link>
-                            <Link
-                                href="/dashboard/orders"
-                                className="btn btn-outline justify-start gap-2"
-                            >
-                                <Ticket className="w-5 h-5" />
-                                Ver Órdenes
-                            </Link>
-                            <Link
-                                href="/dashboard/venues"
-                                className="btn btn-outline justify-start gap-2"
-                            >
-                                <Building2 className="w-5 h-5" />
-                                Mis Recintos
-                            </Link>
-                        </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <Link
+                            href="/dashboard/events/new"
+                            className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-base-200 to-base-300 border border-base-300 p-4 hover:border-primary/50 transition-all duration-300"
+                        >
+                            <div className="flex items-start gap-3">
+                                <div className="p-2 rounded-lg bg-primary/20">
+                                    <Calendar className="w-5 h-5 text-primary" />
+                                </div>
+                                <div>
+                                    <p className="font-semibold group-hover:text-primary transition-colors">Crear Evento</p>
+                                    <p className="text-xs text-base-content/50">Nuevo evento</p>
+                                </div>
+                            </div>
+                        </Link>
+
+                        <Link
+                            href="/dashboard/venues/new"
+                            className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-base-200 to-base-300 border border-base-300 p-4 hover:border-secondary/50 transition-all duration-300"
+                        >
+                            <div className="flex items-start gap-3">
+                                <div className="p-2 rounded-lg bg-secondary/20">
+                                    <Building2 className="w-5 h-5 text-secondary" />
+                                </div>
+                                <div>
+                                    <p className="font-semibold group-hover:text-secondary transition-colors">Nuevo Recinto</p>
+                                    <p className="text-xs text-base-content/50">Agregar venue</p>
+                                </div>
+                            </div>
+                        </Link>
+
+                        <Link
+                            href="/dashboard/orders"
+                            className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-base-200 to-base-300 border border-base-300 p-4 hover:border-success/50 transition-all duration-300"
+                        >
+                            <div className="flex items-start gap-3">
+                                <div className="p-2 rounded-lg bg-success/20">
+                                    <Ticket className="w-5 h-5 text-success" />
+                                </div>
+                                <div>
+                                    <p className="font-semibold group-hover:text-success transition-colors">Ver Órdenes</p>
+                                    <p className="text-xs text-base-content/50">Gestionar ventas</p>
+                                </div>
+                            </div>
+                        </Link>
+
+                        <Link
+                            href="/dashboard/venues"
+                            className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-base-200 to-base-300 border border-base-300 p-4 hover:border-info/50 transition-all duration-300"
+                        >
+                            <div className="flex items-start gap-3">
+                                <div className="p-2 rounded-lg bg-info/20">
+                                    <Building2 className="w-5 h-5 text-info" />
+                                </div>
+                                <div>
+                                    <p className="font-semibold group-hover:text-info transition-colors">Mis Recintos</p>
+                                    <p className="text-xs text-base-content/50">Ver venues</p>
+                                </div>
+                            </div>
+                        </Link>
                     </div>
                 </div>
             </div>

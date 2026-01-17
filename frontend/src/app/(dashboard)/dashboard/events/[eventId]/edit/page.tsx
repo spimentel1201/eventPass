@@ -85,8 +85,9 @@ function EventEditForm({ eventId }: { eventId: string }) {
     // Load event data into form
     useEffect(() => {
         if (event) {
-            const media = event.media || {};
-            const metadata = event.metadata || {};
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const metadata = (event.metadata || {}) as any;
+            const media = metadata.media || {};
 
             reset({
                 title: event.title,

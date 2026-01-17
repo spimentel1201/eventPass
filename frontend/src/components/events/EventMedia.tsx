@@ -17,15 +17,13 @@ export default function EventMedia({ youtubeVideoId, spotifyPlaylistId, title }:
                 🎬 Multimedia
             </h2>
 
-            <div className={`grid gap-6 ${youtubeVideoId && spotifyPlaylistId ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1'}`}>
+            <div className="space-y-6">
                 {/* YouTube Video */}
                 {youtubeVideoId && (
                     <div className="card bg-base-200 overflow-hidden">
-                        <div className="card-body p-4">
-                            <h3 className="card-title text-lg flex items-center gap-2">
-                                <Play className="w-5 h-5 text-error" />
-                                Video Oficial
-                            </h3>
+                        <div className="flex items-center gap-2 px-4 py-3 border-b border-base-300">
+                            <Play className="w-5 h-5 text-error" />
+                            <span className="font-semibold">Video Oficial</span>
                         </div>
                         <div className="aspect-video w-full">
                             <iframe
@@ -42,11 +40,9 @@ export default function EventMedia({ youtubeVideoId, spotifyPlaylistId, title }:
                 {/* Spotify Playlist */}
                 {spotifyPlaylistId && (
                     <div className="card bg-base-200 overflow-hidden">
-                        <div className="card-body p-4">
-                            <h3 className="card-title text-lg flex items-center gap-2">
-                                <Music className="w-5 h-5 text-success" />
-                                Playlist del Artista
-                            </h3>
+                        <div className="flex items-center gap-2 px-4 py-3 border-b border-base-300">
+                            <Music className="w-5 h-5 text-success" />
+                            <span className="font-semibold">Playlist del Artista</span>
                         </div>
                         <div className="h-[352px]">
                             <iframe
@@ -60,17 +56,6 @@ export default function EventMedia({ youtubeVideoId, spotifyPlaylistId, title }:
                     </div>
                 )}
             </div>
-
-            {/* Alternative: Single Spotify Track embed example */}
-            {/* 
-            <iframe 
-                src="https://open.spotify.com/embed/track/TRACK_ID?theme=0" 
-                width="100%" 
-                height="152" 
-                frameBorder="0" 
-                allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-            />
-            */}
         </section>
     );
 }

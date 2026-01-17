@@ -53,18 +53,21 @@ export default function EventDetailPage() {
         );
     }
 
-    // Extract media from event (metadata or direct properties)
-    const media = event.media || {};
+    // Extract metadata (contains media and additional info)
+    const metadata = event.metadata || {};
+
+    // Extract media from metadata.media
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const media = (metadata as any).media || {};
     const galleryImages = media.images?.gallery || [];
     const youtubeVideoId = media.videos?.trailer?.videoId;
     const spotifyPlaylistId = media.audio?.playlist?.playlistId;
 
     // Extract additional info from metadata
-    const metadata = event.metadata || {};
-    const ageRestriction = metadata.ageRestriction;
-    const policies = metadata.policies || [];
-    const includes = metadata.includes || [];
-    const additionalInfo = metadata.additionalInfo;
+    const ageRestriction = metadata.ageRestriction as string | undefined;
+    const policies = (metadata.policies as string[]) || [];
+    const includes = (metadata.includes as string[]) || [];
+    const additionalInfo = metadata.additionalInfo as string | undefined;
 
     // Mock price range (in real app, this would come from ticket tiers)
     const priceRange = {
@@ -97,7 +100,7 @@ export default function EventDetailPage() {
             {/* Hero Section */}
             <EventHero
                 title={event.title}
-                bannerUrl={event.images?.banner?.url}
+                bannerUrl={media.images?.banner?.url || event.images?.banner?.url}
                 startTime={event.startTime}
                 endTime={event.endTime}
                 venueName={event.venue?.name}

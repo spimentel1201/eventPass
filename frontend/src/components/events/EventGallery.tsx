@@ -40,31 +40,23 @@ export default function EventGallery({ images, eventTitle }: EventGalleryProps) 
                 📸 Galería
             </h2>
 
-            {/* Thumbnail Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {images.slice(0, 8).map((image, index) => (
+            {/* Gallery - Full width images stacked */}
+            <div className="space-y-4">
+                {images.map((image, index) => (
                     <button
                         key={index}
                         onClick={() => openLightbox(index)}
-                        className="relative aspect-video rounded-xl overflow-hidden group cursor-pointer"
+                        className="relative w-full aspect-video rounded-xl overflow-hidden group cursor-pointer"
                     >
                         <Image
                             src={image.url}
                             alt={image.alt || `${eventTitle} - Foto ${index + 1}`}
                             fill
-                            className="object-cover transition-transform duration-300 group-hover:scale-110"
+                            className="object-cover transition-transform duration-300 group-hover:scale-105"
                         />
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center">
-                            <ZoomIn className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+                            <ZoomIn className="w-10 h-10 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
                         </div>
-                        {/* Show "+X more" on last visible item if there are more */}
-                        {index === 7 && images.length > 8 && (
-                            <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                                <span className="text-2xl font-bold text-white">
-                                    +{images.length - 8}
-                                </span>
-                            </div>
-                        )}
                     </button>
                 ))}
             </div>
