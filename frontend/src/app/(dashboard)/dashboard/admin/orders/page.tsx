@@ -170,7 +170,7 @@ export default function AdminOrdersPage() {
                                                 </div>
                                             </td>
                                             <td className="max-w-[200px] truncate">
-                                                {order.eventName || 'N/A'}
+                                                {order.eventTitle || 'N/A'}
                                             </td>
                                             <td>{getStatusBadge(order.status)}</td>
                                             <td className="text-center">

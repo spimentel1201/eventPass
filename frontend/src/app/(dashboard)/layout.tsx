@@ -24,30 +24,31 @@ interface DashboardLayoutProps {
     children: React.ReactNode;
 }
 
-// Menu items for CLIENT role (end users who buy tickets)
-const clientMenuItems = [
+// Menu items for USER role (end users who buy tickets - Clientes)
+const userMenuItems = [
     { href: '/dashboard', label: 'Panel', icon: LayoutDashboard },
     { href: '/dashboard/my-tickets', label: 'Mis Tickets', icon: Ticket },
     { href: '/dashboard/my-orders', label: 'Mis Compras', icon: ShoppingCart },
     { href: '/dashboard/my-events', label: 'Próximos Eventos', icon: CalendarCheck },
 ];
 
-// Menu items for ORGANIZER role
-const organizerMenuItems = [
+// Menu items for STAFF role (Organizers - create events)
+const staffMenuItems = [
     { href: '/dashboard', label: 'Panel', icon: LayoutDashboard },
     { href: '/dashboard/events', label: 'Mis Eventos', icon: Calendar },
     { href: '/dashboard/venues', label: 'Recintos', icon: Building2 },
-    { href: '/dashboard/orders', label: 'Órdenes', icon: Ticket },
+    { href: '/dashboard/orders', label: 'Ventas', icon: ShoppingCart },
+    { href: '/dashboard/validate', label: 'Validar Tickets', icon: Ticket },
     { href: '/dashboard/settings', label: 'Configuración', icon: Settings },
 ];
 
-// Menu items for ADMIN role
+// Menu items for ADMIN role (Platform administrators)
 const adminMenuItems = [
     { href: '/dashboard', label: 'Panel', icon: LayoutDashboard },
     { href: '/dashboard/admin/users', label: 'Usuarios', icon: Shield },
     { href: '/dashboard/events', label: 'Eventos', icon: Calendar },
     { href: '/dashboard/venues', label: 'Recintos', icon: Building2 },
-    { href: '/dashboard/orders', label: 'Órdenes', icon: Ticket },
+    { href: '/dashboard/admin/orders', label: 'Órdenes', icon: ShoppingCart },
     { href: '/dashboard/settings', label: 'Configuración', icon: Settings },
 ];
 
@@ -55,11 +56,11 @@ function getMenuItemsForRole(role: string | undefined) {
     switch (role) {
         case 'ADMIN':
             return adminMenuItems;
-        case 'ORGANIZER':
-            return organizerMenuItems;
-        case 'CLIENT':
+        case 'STAFF':
+            return staffMenuItems;
+        case 'USER':
         default:
-            return clientMenuItems;
+            return userMenuItems;
     }
 }
 
@@ -80,7 +81,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         switch (user?.role) {
             case 'ADMIN':
                 return <span className="badge badge-error badge-sm">Admin</span>;
-            case 'ORGANIZER':
+            case 'STAFF':
                 return <span className="badge badge-primary badge-sm">Organizador</span>;
             default:
                 return <span className="badge badge-ghost badge-sm">Cliente</span>;

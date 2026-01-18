@@ -663,11 +663,11 @@ export default function DashboardPage() {
         return <AdminDashboard />;
     }
 
-    // Show Organizer Dashboard for ORGANIZER role
-    if (user?.role === 'ORGANIZER') {
+    // Show Organizer Dashboard for STAFF role (Organizers)
+    if (user?.role === 'STAFF') {
         return <OrganizerDashboard />;
     }
 
-    // Show Client Dashboard for CLIENT role (default)
+    // Show Client Dashboard for USER role (default)
     return <ClientDashboard />;
 }

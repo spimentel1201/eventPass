@@ -44,7 +44,7 @@ export interface AdminOrder {
     userEmail: string;
     userName: string;
     eventId: string;
-    eventName: string;
+    eventTitle: string;  // Changed from eventName
     status: 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED';
     totalAmount: number;
     platformFee: number;

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { API_ROUTES } from '@/lib/constants';
 import { useCartStore } from '@/stores/cartStore';
@@ -21,6 +21,22 @@ interface ApiResponse<T> {
     success: boolean;
     data: T;
     message?: string;
+}
+
+// Order response type from API
+export interface OrderResponse {
+    id: string;
+    eventId: string;
+    status: 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED';
+    totalAmount: number;
+    platformFee: number;
+    netAmount: number;
+    currency: string;
+    createdAt: string;
+    // Enriched fields
+    eventTitle?: string;
+    eventDate?: string;
+    ticketCount?: number;
 }
 
 export function useCreateOrder() {
@@ -66,4 +82,27 @@ export function useCreateOrder() {
         isSuccess: mutation.isSuccess,
         order: mutation.data,
     };
+}
+
+// Hook to get user's orders
+export function useMyOrders() {
+    return useQuery({
+        queryKey: ['my-orders'],
+        queryFn: async () => {
+            const response = await api.get<ApiResponse<OrderResponse[]>>(API_ROUTES.MY_ORDERS);
+            return response.data.data;
+        },
+    });
+}
+
+// Hook to get a single order
+export function useOrder(orderId: string) {
+    return useQuery({
+        queryKey: ['order', orderId],
+        queryFn: async () => {
+            const response = await api.get<ApiResponse<OrderResponse>>(API_ROUTES.ORDER(orderId));
+            return response.data.data;
+        },
+        enabled: !!orderId,
+    });
 }
