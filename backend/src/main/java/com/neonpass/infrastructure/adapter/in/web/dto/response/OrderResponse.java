@@ -31,6 +31,7 @@ public class OrderResponse {
 
     // Info adicional para admin
     private String userEmail;
+    private String userName;
     private String eventTitle;
     private Integer ticketCount;
 }

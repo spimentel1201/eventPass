@@ -1,10 +1,15 @@
 package com.neonpass.infrastructure.adapter.in.web;
 
+import com.neonpass.application.service.TicketService;
 import com.neonpass.domain.model.Order;
+import com.neonpass.domain.model.Ticket;
 import com.neonpass.domain.model.enums.OrderStatus;
 import com.neonpass.domain.port.in.CheckoutUseCase;
 import com.neonpass.domain.port.in.GetOrderUseCase;
 import com.neonpass.domain.port.in.GetUserOrdersUseCase;
+import com.neonpass.domain.port.out.EventRepository;
+import com.neonpass.domain.port.out.OrderRepository;
+import com.neonpass.domain.port.out.TicketRepository;
 import com.neonpass.infrastructure.adapter.in.web.dto.request.CheckoutRequest;
 import com.neonpass.infrastructure.adapter.in.web.dto.request.SectionCheckoutRequest;
 import com.neonpass.infrastructure.adapter.in.web.dto.response.CheckoutResponse;
@@ -22,6 +27,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -39,6 +45,10 @@ public class OrderController {
         private final CheckoutUseCase checkoutUseCase;
         private final GetOrderUseCase getOrderUseCase;
         private final GetUserOrdersUseCase getUserOrdersUseCase;
+        private final OrderRepository orderRepository;
+        private final EventRepository eventRepository;
+        private final TicketRepository ticketRepository;
+        private final TicketService ticketService;
 
         @PostMapping("/checkout")
         @Operation(summary = "Procesar checkout por sección", description = "Crear orden basada en selección de secciones y cantidades")
@@ -68,19 +78,32 @@ public class OrderController {
                                 .createdAt(LocalDateTime.now())
                                 .build();
 
-                // Save order (simplified - in real app would use repository)
-                // For now, we'll just return success response
+                // Save order to database
+                Order savedOrder = orderRepository.save(order);
 
-                int ticketCount = request.getItems().stream()
-                                .mapToInt(SectionCheckoutRequest.SectionItem::getQuantity)
-                                .sum();
+                // Create tickets for each item
+                List<UUID> ticketIds = new ArrayList<>();
+                for (SectionCheckoutRequest.SectionItem item : request.getItems()) {
+                        for (int i = 0; i < item.getQuantity(); i++) {
+                                Ticket ticket = ticketService.createTicket(
+                                                savedOrder.getId(),
+                                                request.getEventId(),
+                                                null, // ticketTierId - could use sectionId as tier
+                                                null, // seatId - General Admission
+                                                item.getPricePerTicket(),
+                                                "PEN");
+                                ticketIds.add(ticket.getId());
+                        }
+                }
+
+                int ticketCount = ticketIds.size();
 
                 var response = CheckoutResponse.builder()
-                                .orderId(order.getId())
+                                .orderId(savedOrder.getId())
                                 .ticketCount(ticketCount)
                                 .totalAmount(grandTotal)
                                 .currency("PEN")
-                                .ticketIds(List.of()) // No individual tickets for section-based
+                                .ticketIds(ticketIds)
                                 .build();
 
                 return ResponseEntity.status(HttpStatus.CREATED)
@@ -109,6 +132,15 @@ public class OrderController {
         }
 
         private OrderResponse toResponse(Order order) {
+                String eventTitle = null;
+                if (order.getEventId() != null) {
+                        eventTitle = eventRepository.findById(order.getEventId())
+                                        .map(e -> e.getTitle())
+                                        .orElse(null);
+                }
+
+                int ticketCount = ticketRepository.findByOrderId(order.getId()).size();
+
                 return OrderResponse.builder()
                                 .id(order.getId())
                                 .eventId(order.getEventId())
@@ -118,6 +150,8 @@ public class OrderController {
                                 .netAmount(order.getNetAmount())
                                 .currency(order.getCurrency())
                                 .createdAt(order.getCreatedAt())
+                                .eventTitle(eventTitle)
+                                .ticketCount(ticketCount)
                                 .build();
         }
 }
