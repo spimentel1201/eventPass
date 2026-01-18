@@ -6,8 +6,11 @@ import api from '@/lib/api';
 import { API_ROUTES } from '@/lib/constants';
 
 interface ValidationResult {
-    valid: boolean;
+    status: 'SUCCESS' | 'REJECTED' | string;
     message: string;
+    ticketId?: string;
+    eventId?: string;
+    seatId?: string;
     ticket?: {
         id: string;
         eventTitle: string;
@@ -78,11 +81,11 @@ export default function ValidateTicketsPage() {
 
             const validationResult = response.data.data;
             setResult(validationResult);
-            playSound(validationResult.valid);
+            playSound(validationResult.status === 'SUCCESS');
             lastScannedRef.current = code;
         } catch (error: any) {
-            const errorResult = {
-                valid: false,
+            const errorResult: ValidationResult = {
+                status: 'REJECTED',
                 message: error.response?.data?.message || 'Error al validar el ticket'
             };
             setResult(errorResult);
@@ -282,13 +285,13 @@ export default function ValidateTicketsPage() {
             {/* Result - Visual Notification */}
             {result && (
                 <div
-                    className={`card border-4 ${result.valid
-                            ? 'bg-success/20 border-success animate-pulse'
-                            : 'bg-error/20 border-error'
+                    className={`card border-4 ${result.status === 'SUCCESS'
+                        ? 'bg-success/20 border-success animate-pulse'
+                        : 'bg-error/20 border-error'
                         }`}
                 >
                     <div className="card-body items-center text-center py-8">
-                        {result.valid ? (
+                        {result.status === 'SUCCESS' ? (
                             <>
                                 <div className="w-24 h-24 rounded-full bg-success flex items-center justify-center mb-4">
                                     <CheckCircle className="w-16 h-16 text-success-content" />
