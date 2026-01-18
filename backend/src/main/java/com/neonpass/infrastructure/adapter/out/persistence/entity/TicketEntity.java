@@ -25,7 +25,6 @@ import java.util.UUID;
 public class TicketEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     @Column(name = "order_id")
