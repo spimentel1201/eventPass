@@ -1,29 +1,24 @@
 # ==========================================
 # NeonPass API - Dockerfile for Render
-# Multi-stage build for optimized image
+# Using official Maven image (no wrapper needed)
 # ==========================================
 
 # Stage 1: Build
-FROM eclipse-temurin:21-jdk-alpine AS builder
+FROM maven:3.9.6-eclipse-temurin-21-alpine AS builder
 
 WORKDIR /app
 
-# Copy Maven wrapper and pom
-COPY mvnw .
-COPY .mvn .mvn
+# Copy pom.xml first for better caching
 COPY pom.xml .
 
-# Make mvnw executable
-RUN chmod +x mvnw
-
 # Download dependencies (cached layer)
-RUN ./mvnw dependency:go-offline -B
+RUN mvn dependency:go-offline -B
 
 # Copy source code
 COPY src src
 
 # Build the application
-RUN ./mvnw package -DskipTests -B
+RUN mvn package -DskipTests -B
 
 # Stage 2: Runtime
 FROM eclipse-temurin:21-jre-alpine
@@ -41,9 +36,5 @@ USER appuser
 # Expose port
 EXPOSE 8080
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:8080/actuator/health || exit 1
-
 # Run the application
-ENTRYPOINT ["java", "-jar", "-Dspring.profiles.active=prod", "-Djava.security.egd=file:/dev/./urandom", "app.jar"]
+ENTRYPOINT ["java", "-jar", "-Dspring.profiles.active=prod", "-Djava.security.egd=file:/dev/./urandom", "-Xmx256m", "-Xms128m", "app.jar"]
