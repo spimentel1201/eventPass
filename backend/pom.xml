@@ -52,6 +52,14 @@
         </dependency>
 
         <!-- ==========================================
+             Actuator (Health checks for production)
+             ========================================== -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
+        <!-- ==========================================
              Redis (Distributed Locking & Cache)
              ========================================== -->
         <dependency>
