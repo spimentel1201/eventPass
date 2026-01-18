@@ -1,0 +1,158 @@
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useMutation } from '@tanstack/react-query';
+import api from '@/lib/api';
+import { useAuthStore } from '@/stores/authStore';
+import { API_ROUTES } from '@/lib/constants';
+import type { LoginFormData, RegisterFormData } from '@/schemas/authSchema';
+import type { ApiResponse, AuthResponse, UserResponse } from '@/types';
+
+interface LoginRequest {
+    email: string;
+    password: string;
+}
+
+interface RegisterRequest {
+    email: string;
+    password: string;
+    fullName: string;
+}
+
+// Helper to get redirect URL from current location
+function getRedirectUrl(): string | null {
+    if (typeof window === 'undefined') return null;
+    const params = new URLSearchParams(window.location.search);
+    return params.get('redirect');
+}
+
+export function useAuth() {
+    const router = useRouter();
+    const { setAuth, logout: storeLogout } = useAuthStore();
+    const [error, setError] = useState<string | null>(null);
+
+    // Login mutation
+    const loginMutation = useMutation({
+        mutationFn: async (data: LoginRequest) => {
+            const response = await api.post<ApiResponse<AuthResponse>>(
+                API_ROUTES.LOGIN,
+                data
+            );
+            return response.data;
+        },
+        onSuccess: async (response) => {
+            const { accessToken, refreshToken, user: authUser } = response.data;
+
+            // Use user from login response if available, otherwise fetch
+            let user: UserResponse;
+            if (authUser) {
+                user = authUser;
+            } else {
+                try {
+                    const userResponse = await api.get<ApiResponse<UserResponse>>(
+                        API_ROUTES.ME,
+                        { headers: { Authorization: `Bearer ${accessToken}` } }
+                    );
+                    user = userResponse.data.data;
+                } catch {
+                    // If /me fails, use minimal info from token
+                    user = { id: '', email: '', fullName: 'Usuario', role: 'USER', createdAt: '' };
+                }
+            }
+
+            setAuth(
+                {
+                    id: user.id,
+                    email: user.email,
+                    fullName: user.fullName,
+                    role: user.role,
+                },
+                accessToken,
+                refreshToken
+            );
+
+            setError(null);
+
+            // Redirect to the original URL or default based on role
+            const redirectUrl = getRedirectUrl();
+            if (redirectUrl) {
+                router.push(redirectUrl);
+            } else if (user.role === 'ADMIN' || user.role === 'ORGANIZER') {
+                // Both ADMIN and ORGANIZER go to dashboard (admin panel not yet implemented)
+                router.push('/dashboard');
+            } else {
+                router.push('/events');
+            }
+        },
+        onError: (err: Error & { response?: { data?: { message?: string } } }) => {
+            setError(err.response?.data?.message || 'Error al iniciar sesión');
+        },
+    });
+
+    // Register mutation
+    const registerMutation = useMutation({
+        mutationFn: async (data: RegisterRequest) => {
+            const response = await api.post<ApiResponse<AuthResponse>>(
+                API_ROUTES.REGISTER,
+                data
+            );
+            return response.data;
+        },
+        onSuccess: async (response) => {
+            const { accessToken, refreshToken } = response.data;
+
+            // Fetch user info
+            const userResponse = await api.get<ApiResponse<UserResponse>>(
+                API_ROUTES.ME,
+                { headers: { Authorization: `Bearer ${accessToken}` } }
+            );
+
+            const user = userResponse.data.data;
+
+            setAuth(
+                {
+                    id: user.id,
+                    email: user.email,
+                    fullName: user.fullName,
+                    role: user.role,
+                },
+                accessToken,
+                refreshToken
+            );
+
+            setError(null);
+            router.push('/events');
+        },
+        onError: (err: Error & { response?: { data?: { message?: string } } }) => {
+            setError(err.response?.data?.message || 'Error al registrarse');
+        },
+    });
+
+    const login = (data: LoginFormData) => {
+        setError(null);
+        loginMutation.mutate(data);
+    };
+
+    const registerUser = (data: RegisterFormData) => {
+        setError(null);
+        registerMutation.mutate({
+            email: data.email,
+            password: data.password,
+            fullName: data.fullName,
+        });
+    };
+
+    const logout = () => {
+        storeLogout();
+        router.push('/login');
+    };
+
+    return {
+        login,
+        registerUser,
+        logout,
+        isLoading: loginMutation.isPending || registerMutation.isPending,
+        error,
+    };
+}
