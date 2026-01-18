@@ -51,7 +51,7 @@
 
 ## 4. Mobile Rules (App - Flutter)
 - **Framework:** Flutter (Latest Stable).
-- **State Management:** Riverpod o BLoC.
+- **State Management:** Riverpod.
 - **Architecture:** Clean Architecture (Domain, Data, Presentation layers).
 - **Dependencies:** `mobile_scanner` (QR Scanning), `dio` (HTTP), `flutter_secure_storage`.
 
