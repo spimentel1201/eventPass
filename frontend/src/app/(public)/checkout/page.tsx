@@ -16,6 +16,8 @@ import { useCartStore } from '@/stores/cartStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useCreateOrder } from '@/hooks/useOrders';
 import { ReservationTimer } from '@/components/features/checkout/ReservationTimer';
+import { PaymentMethodSelector, StripeCheckout, MercadoPagoCheckout } from '@/components/payment';
+import { PaymentProvider, PaymentResponse, useCreatePayment } from '@/hooks/usePayment';
 
 export default function CheckoutPage() {
     const router = useRouter();
@@ -33,6 +35,76 @@ export default function CheckoutPage() {
 
     const { createOrder, isLoading, error, isSuccess, order } = useCreateOrder();
     const [acceptedTerms, setAcceptedTerms] = useState(false);
+
+    // Payment state
+    const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentProvider | null>(null);
+    const [paymentData, setPaymentData] = useState<PaymentResponse | null>(null);
+    const [paymentError, setPaymentError] = useState<string | null>(null);
+    const [paymentCompleted, setPaymentCompleted] = useState(false);
+    const createPaymentMutation = useCreatePayment();
+    const isPaymentLoading = createPaymentMutation.isPending;
+
+    // Calculate totals
+    const subtotal = totalAmount();
+    const serviceFee = subtotal * 0.10;
+    const total = subtotal + serviceFee;
+
+    // Handle payment method selection - Solo selecciona, no crea pago todavía
+    const handlePaymentMethodSelect = (provider: PaymentProvider) => {
+        setSelectedPaymentMethod(provider);
+        setPaymentError(null);
+    };
+
+    // Handle proceed to payment - Llamado cuando el usuario confirma
+    const handleProceedToPayment = async () => {
+        if (!selectedPaymentMethod || !acceptedTerms || !eventId) return;
+
+        setPaymentError(null);
+        setPaymentData(null);
+
+        try {
+            // Create the order first
+            createOrder();
+        } catch (err: any) {
+            setPaymentError(err.message || 'Error al crear la orden');
+        }
+    };
+
+    // Effect to create payment after order is created
+    const handleCreatePayment = async () => {
+        if (!isSuccess || !order || !selectedPaymentMethod) return;
+        if (paymentData) return; // Already created
+
+        try {
+            const payment = await createPaymentMutation.mutateAsync({
+                orderId: order.id,
+                provider: selectedPaymentMethod,
+                amount: total,
+                currency: 'PEN',
+                description: `Tickets para ${eventTitle || 'Evento'}`
+            });
+
+            setPaymentData(payment);
+        } catch (err: any) {
+            setPaymentError(err.message || 'Error al procesar el pago');
+        }
+    };
+
+    // Call handleCreatePayment when order is ready
+    if (isSuccess && order && selectedPaymentMethod && !paymentData && !createPaymentMutation.isPending) {
+        handleCreatePayment();
+    }
+
+    // Handle payment success
+    const handlePaymentSuccess = () => {
+        setPaymentCompleted(true);
+        clearCart();
+    };
+
+    // Handle payment error
+    const handlePaymentError = (errorMsg: string) => {
+        setPaymentError(errorMsg);
+    };
 
     // Redirect to login if not authenticated
     if (!isAuthenticated) {
@@ -66,8 +138,8 @@ export default function CheckoutPage() {
         );
     }
 
-    // Success state
-    if (isSuccess && order) {
+    // Success state - Solo mostrar cuando el PAGO está completado
+    if (paymentCompleted && order) {
         return (
             <div className="container mx-auto px-4 py-16 max-w-lg text-center">
                 <div className="card bg-base-200">
@@ -99,15 +171,6 @@ export default function CheckoutPage() {
         clearCart();
         router.push('/events');
     };
-
-    const handleConfirmOrder = () => {
-        if (!acceptedTerms) return;
-        createOrder();
-    };
-
-    const subtotal = totalAmount();
-    const serviceFee = subtotal * 0.10;
-    const total = subtotal + serviceFee;
 
     return (
         <div className="container mx-auto px-4 py-8">
@@ -256,12 +319,55 @@ export default function CheckoutPage() {
                                 Pago
                             </h3>
 
-                            <div className="alert alert-info mt-4">
-                                <Shield className="w-5 h-5" />
-                                <span className="text-sm">
-                                    Demo: El pago se simula automáticamente
-                                </span>
-                            </div>
+                            {/* Payment Method Selector */}
+                            <PaymentMethodSelector
+                                onSelect={handlePaymentMethodSelect}
+                                selectedProvider={selectedPaymentMethod || undefined}
+                                disabled={isLoading || isPaymentLoading || !!paymentData}
+                            />
+
+                            {/* Proceed to Payment Button - Solo mostrar si hay método seleccionado y no hay paymentData aún */}
+                            {selectedPaymentMethod && acceptedTerms && !paymentData && !isLoading && (
+                                <button
+                                    className="btn btn-primary btn-lg w-full mt-4"
+                                    onClick={handleProceedToPayment}
+                                    disabled={isLoading || isPaymentLoading}
+                                >
+                                    {isLoading || isPaymentLoading ? (
+                                        <>
+                                            <Loader2 className="w-5 h-5 animate-spin" />
+                                            Procesando...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <CreditCard className="w-5 h-5" />
+                                            Proceder al pago - S/ {total.toFixed(2)}
+                                        </>
+                                    )}
+                                </button>
+                            )}
+
+                            {/* Stripe Checkout */}
+                            {selectedPaymentMethod === 'STRIPE' && paymentData?.clientSecret && (
+                                <div className="mt-4">
+                                    <StripeCheckout
+                                        clientSecret={paymentData.clientSecret}
+                                        publicKey={paymentData.publicKey || ''}
+                                        onSuccess={handlePaymentSuccess}
+                                        onError={handlePaymentError}
+                                    />
+                                </div>
+                            )}
+
+                            {/* MercadoPago Checkout */}
+                            {selectedPaymentMethod === 'MERCADOPAGO' && paymentData?.checkoutUrl && (
+                                <div className="mt-4">
+                                    <MercadoPagoCheckout
+                                        checkoutUrl={paymentData.checkoutUrl}
+                                        publicKey={paymentData.publicKey || ''}
+                                    />
+                                </div>
+                            )}
 
                             {/* Terms */}
                             <div className="form-control mt-4">
@@ -282,24 +388,13 @@ export default function CheckoutPage() {
                                 </label>
                             </div>
 
-                            {/* Confirm Button */}
-                            <button
-                                className="btn btn-primary btn-lg w-full mt-4"
-                                disabled={!acceptedTerms || isLoading}
-                                onClick={handleConfirmOrder}
-                            >
-                                {isLoading ? (
-                                    <>
-                                        <Loader2 className="w-5 h-5 animate-spin" />
-                                        Procesando...
-                                    </>
-                                ) : (
-                                    <>
-                                        <CreditCard className="w-5 h-5" />
-                                        Pagar S/ {total.toFixed(2)}
-                                    </>
-                                )}
-                            </button>
+                            {/* Payment Error */}
+                            {paymentError && (
+                                <div className="alert alert-error mt-4">
+                                    <AlertCircle className="w-5 h-5" />
+                                    <span>{paymentError}</span>
+                                </div>
+                            )}
 
                             {/* Security */}
                             <div className="text-center mt-4">
