@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -55,12 +55,18 @@ export default function CheckoutPage() {
         setPaymentError(null);
     };
 
+    // Store order amount before cart is cleared
+    const [orderAmount, setOrderAmount] = useState<number>(0);
+
     // Handle proceed to payment - Llamado cuando el usuario confirma
     const handleProceedToPayment = async () => {
         if (!selectedPaymentMethod || !acceptedTerms || !eventId) return;
 
         setPaymentError(null);
         setPaymentData(null);
+
+        // Store the total amount before order creation (cart might be cleared)
+        setOrderAmount(total);
 
         try {
             // Create the order first
@@ -71,29 +77,37 @@ export default function CheckoutPage() {
     };
 
     // Effect to create payment after order is created
-    const handleCreatePayment = async () => {
-        if (!isSuccess || !order || !selectedPaymentMethod) return;
-        if (paymentData) return; // Already created
+    useEffect(() => {
+        const createPayment = async () => {
+            if (!isSuccess || !order || !selectedPaymentMethod || paymentData || createPaymentMutation.isPending) {
+                return;
+            }
 
-        try {
-            const payment = await createPaymentMutation.mutateAsync({
-                orderId: order.id,
-                provider: selectedPaymentMethod,
-                amount: total,
-                currency: 'PEN',
-                description: `Tickets para ${eventTitle || 'Evento'}`
-            });
+            // Use stored orderAmount or calculate from total
+            const amountToCharge = orderAmount > 0 ? orderAmount : total;
 
-            setPaymentData(payment);
-        } catch (err: any) {
-            setPaymentError(err.message || 'Error al procesar el pago');
-        }
-    };
+            if (amountToCharge <= 0) {
+                setPaymentError('El monto debe ser mayor a 0');
+                return;
+            }
 
-    // Call handleCreatePayment when order is ready
-    if (isSuccess && order && selectedPaymentMethod && !paymentData && !createPaymentMutation.isPending) {
-        handleCreatePayment();
-    }
+            try {
+                const payment = await createPaymentMutation.mutateAsync({
+                    orderId: order.id,
+                    provider: selectedPaymentMethod,
+                    amount: amountToCharge,
+                    currency: 'PEN',
+                    description: `Tickets para ${eventTitle || 'Evento'}`
+                });
+
+                setPaymentData(payment);
+            } catch (err: any) {
+                setPaymentError(err.response?.data?.error?.message || err.message || 'Error al procesar el pago');
+            }
+        };
+
+        createPayment();
+    }, [isSuccess, order, selectedPaymentMethod, paymentData, createPaymentMutation.isPending]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Handle payment success
     const handlePaymentSuccess = () => {
