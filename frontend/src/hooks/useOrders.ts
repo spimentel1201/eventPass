@@ -6,7 +6,6 @@ import { API_ROUTES } from '@/lib/constants';
 import { useCartStore } from '@/stores/cartStore';
 import type { Order } from '@/types';
 
-// Request for section-based purchase
 interface CreateOrderRequest {
     eventId: string;
     items: {
@@ -15,6 +14,15 @@ interface CreateOrderRequest {
         pricePerTicket: number;
     }[];
     totalAmount: number;
+}
+
+// Respuesta real del endpoint de checkout (coincide con CheckoutResponse del backend)
+interface CheckoutResponse {
+    orderId: string;  // El backend devuelve 'orderId', no 'id'
+    ticketCount: number;
+    totalAmount: number;
+    currency: string;
+    ticketIds: string[];
 }
 
 interface ApiResponse<T> {
@@ -64,7 +72,7 @@ export function useCreateOrder() {
 
             console.log('Order request:', request);
 
-            const response = await api.post<ApiResponse<Order>>(
+            const response = await api.post<ApiResponse<CheckoutResponse>>(
                 API_ROUTES.CHECKOUT,
                 request
             );

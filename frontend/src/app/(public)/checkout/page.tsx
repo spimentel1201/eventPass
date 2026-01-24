@@ -93,7 +93,7 @@ export default function CheckoutPage() {
 
             try {
                 const payment = await createPaymentMutation.mutateAsync({
-                    orderId: order.id,
+                    orderId: order.orderId,  // El backend devuelve 'orderId', no 'id'
                     provider: selectedPaymentMethod,
                     amount: amountToCharge,
                     currency: 'PEN',
@@ -165,7 +165,7 @@ export default function CheckoutPage() {
                         </p>
                         <div className="bg-base-300 rounded-lg p-4 mb-6">
                             <p className="text-sm text-base-content/60">Número de orden</p>
-                            <p className="text-xl font-mono font-bold">{order.id}</p>
+                            <p className="text-xl font-mono font-bold">{order.orderId}</p>
                         </div>
                         <p className="text-sm text-base-content/60 mb-6">
                             Recibirás un correo con los detalles de tu compra y tus tickets.
