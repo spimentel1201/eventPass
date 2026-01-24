@@ -70,9 +70,7 @@ export function useCreateOrder() {
             );
             return response.data.data;
         },
-        onSuccess: () => {
-            useCartStore.getState().clearCart();
-        },
+        // NO limpiar carrito aquí - el carrito se limpia en handlePaymentSuccess después del pago exitoso
     });
 
     return {

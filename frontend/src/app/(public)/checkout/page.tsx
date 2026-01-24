@@ -136,8 +136,8 @@ export default function CheckoutPage() {
         );
     }
 
-    // Empty cart
-    if (items.length === 0 && !isSuccess) {
+    // Empty cart - Solo mostrar si no hay items, no hay orden creada, y no hay pago completado
+    if (items.length === 0 && !order && !paymentCompleted) {
         return (
             <div className="container mx-auto px-4 py-16 text-center">
                 <AlertCircle className="w-16 h-16 mx-auto text-error mb-4" />
@@ -340,8 +340,8 @@ export default function CheckoutPage() {
                                 disabled={isLoading || isPaymentLoading || !!paymentData}
                             />
 
-                            {/* Proceed to Payment Button - Solo mostrar si hay método seleccionado y no hay paymentData aún */}
-                            {selectedPaymentMethod && acceptedTerms && !paymentData && !isLoading && (
+                            {/* Proceed to Payment Button - Solo mostrar si hay método seleccionado, monto > 0 y no hay paymentData aún */}
+                            {selectedPaymentMethod && acceptedTerms && !paymentData && !isLoading && total > 0 && (
                                 <button
                                     className="btn btn-primary btn-lg w-full mt-4"
                                     onClick={handleProceedToPayment}
